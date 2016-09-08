@@ -1,0 +1,9 @@
+[package]
+name = "zero_sum"
+version = "0.1.0"
+authors = ["Chris Foster <cdbfoster@gmail.com>"]
+
+[dependencies]
+lazy_static = "*"
+rand = "*"
+time = "*"
