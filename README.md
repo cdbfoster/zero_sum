@@ -23,7 +23,6 @@ and add this to your crate root:
 ```rust
 #[macro_use]
 extern crate zero_sum;
-# fn main() { }
 ```
 
 # Implementation
