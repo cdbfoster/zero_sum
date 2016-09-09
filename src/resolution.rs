@@ -17,6 +17,32 @@
 // Copyright 2016 Chris Foster
 //
 
+/// A game's resolution.
+///
+/// This is often an `enum` that represents each ending a game can have.
+///
+/// # Example
+///
+/// For tic-tac-toe, we might have:
+///
+/// ```rust
+/// # extern crate zero_sum;
+/// # use zero_sum::Resolution;
+/// # #[derive(PartialEq)]
+/// enum Mark { X, O }
+///
+/// # #[derive(PartialEq)]
+/// enum End {
+///     Win(Mark),
+///     CatsGame,
+/// }
+///
+/// impl Resolution for End {
+///     fn is_win(&self) -> bool { if let End::Win(_) = *self { true } else { false } }
+///     fn is_draw(&self) -> bool { if *self == End::CatsGame { true } else { false } }
+/// }
+/// # fn main() { }
+/// ```
 pub trait Resolution {
     fn is_win(&self) -> bool;
     fn is_draw(&self) -> bool;

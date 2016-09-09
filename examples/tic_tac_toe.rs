@@ -28,8 +28,8 @@ use std::i8;
 use std::io::{self, Write};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-use zero_sum::ai::Evaluation;
-use zero_sum::ai::search::Search;
+use zero_sum::analysis::Evaluation;
+use zero_sum::analysis::search::Search;
 use zero_sum::State;
 
 // Tic-Tac-Toe types
@@ -162,7 +162,7 @@ impl zero_sum::State<Ply, Resolution> for Board {
     }
 }
 
-impl zero_sum::ai::Extrapolatable<Ply> for Board {
+impl zero_sum::analysis::Extrapolatable<Ply> for Board {
     fn extrapolate(&self) -> Vec<Ply> {
         let next_mark = self.next_mark();
         self.0.iter().enumerate().filter_map(|(index, space)| if space.is_none() {
@@ -181,7 +181,7 @@ struct Eval(i8);
 
 prepare_evaluation_tuple!(Eval); // Implements arithmetic operators and display in terms of the inner type
 
-impl zero_sum::ai::Evaluation for Eval {
+impl zero_sum::analysis::Evaluation for Eval {
     fn null() -> Eval { Eval(0) }
     fn epsilon() -> Eval { Eval(1) }
     fn win() -> Eval { Eval(14) }
@@ -189,7 +189,7 @@ impl zero_sum::ai::Evaluation for Eval {
     fn is_win(&self) -> bool { self.0.abs() >= 5 }
 }
 
-impl zero_sum::ai::Evaluatable<Eval> for Board {
+impl zero_sum::analysis::Evaluatable<Eval> for Board {
     fn evaluate(&self) -> Eval {
         let next_mark = self.next_mark();
 
@@ -220,7 +220,7 @@ fn main() {
 
     loop {
         let mut board = Board::new();
-        let mut ai = zero_sum::ai::search::PvSearch::<Eval, Board, Ply, Resolution>::with_depth(9);
+        let mut ai = zero_sum::analysis::search::PvSearch::<Eval, Board, Ply, Resolution>::new();
 
         println!("--------------------");
 

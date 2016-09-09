@@ -22,7 +22,7 @@ use std::sync::Mutex;
 use rand::{Rng, SeedableRng, StdRng};
 use time;
 
-use ai::Extrapolatable;
+use analysis::Extrapolatable;
 use ply::Ply;
 
 lazy_static! {

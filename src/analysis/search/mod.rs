@@ -17,32 +17,41 @@
 // Copyright 2016 Chris Foster
 //
 
+//! Tools for searching the game tree.
+
 use std::fmt;
 use std::marker::PhantomData;
 use std::sync::mpsc::Receiver;
 
-use ai::{Evaluatable, Evaluation, Extrapolatable};
+use analysis::{Evaluatable, Evaluation, Extrapolatable};
 use ply::Ply;
 use resolution::Resolution;
 use state::State;
 
+/// The result of a search.
 pub struct Analysis<'a, E, S, P, R> where
     E: Evaluation,
     S: 'a + State<P, R> + Evaluatable<E> + Extrapolatable<P>,
     P: Ply,
     R: Resolution {
+    /// A reference to the state on which the search was performed.
     pub state: &'a S,
+    /// The evaluation of the state after applying the principal variation.
     pub evaluation: E,
+    /// The principal variation of the state.
     pub principal_variation: Vec<P>,
+    /// Optional statistics from the search may be available for printing.
     pub stats: Option<Box<fmt::Display>>,
     _phantom: PhantomData<R>,
 }
 
+/// Provides search capabilities
 pub trait Search<E, S, P, R> where
     E: Evaluation,
     S: State<P, R> + Evaluatable<E> + Extrapolatable<P>,
     P: Ply,
     R: Resolution {
+    /// Generates an analysis of `state`.  `interrupt` is optionally provided to interrupt long searches.
     fn search<'a>(&mut self, state: &'a S, interrupt: Option<Receiver<()>>) -> Analysis<'a, E, S, P, R>;
 }
 

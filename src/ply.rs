@@ -20,4 +20,26 @@
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
+/// This trait marks a ply.
+///
+/// # Example
+///
+/// For tic-tac-toe, we might have:
+///
+/// ```rust
+/// # extern crate zero_sum;
+/// # use zero_sum::Ply;
+/// # #[derive(Clone, Debug, Hash, PartialEq)]
+/// enum Mark { X, O }
+///
+/// # #[derive(Clone, Debug, Hash, PartialEq)]
+/// struct Move {
+///     mark: Mark,
+///     coords: (usize, usize),
+/// }
+///
+/// impl Ply for Move { }
+/// # impl std::fmt::Display for Move { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
+/// # fn main() { }
+/// ```
 pub trait Ply: Clone + Debug + Display + Hash + PartialEq { }

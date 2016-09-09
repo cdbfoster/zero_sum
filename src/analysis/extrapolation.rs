@@ -19,7 +19,10 @@
 
 use ply::Ply;
 
+/// Provides the possible plies from a given state.
 pub trait Extrapolatable<P> where
     P: Ply {
+    /// Returns a list of plies that should be considered from the current state.  The search
+    /// system does not assume that all plies returned are correct.
     fn extrapolate(&self) -> Vec<P>;
 }

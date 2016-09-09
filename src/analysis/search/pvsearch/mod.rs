@@ -22,14 +22,44 @@ use std::sync::mpsc::Receiver;
 
 use time;
 
-use ai::{Evaluatable, Evaluation, Extrapolatable};
-use ai::search::{Analysis, Search};
+use analysis::{Evaluatable, Evaluation, Extrapolatable};
+use analysis::search::{Analysis, Search};
 use ply::Ply;
 use resolution::Resolution;
 use state::State;
 
 use self::ply_generator::PlyGenerator;
 
+/// A PVS implementation of `Search` with a few common optimizations.
+///
+/// # Example
+///
+/// ```rust
+/// # #[macro_use] extern crate zero_sum;
+/// # use zero_sum::analysis::search::{Search, PvSearch};
+/// # use std::ops::{Add, Div, Mul, Neg, Sub};
+/// # #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)] struct Eval(i8);
+/// # prepare_evaluation_tuple!(Eval);
+/// # impl zero_sum::analysis::Evaluation for Eval { fn null() -> Eval { Eval(0) } fn epsilon() -> Eval { Eval(0) } fn win() -> Eval { Eval(0) } fn max() -> Eval { Eval(0) } fn is_win(&self) -> bool { false } }
+/// # #[derive(Clone, Debug, Hash, PartialEq)] struct Ply(i8);
+/// # impl zero_sum::Ply for Ply { }
+/// # impl std::fmt::Display for Ply { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
+/// # struct Resolution(i8);
+/// # impl zero_sum::Resolution for Resolution { fn is_win(&self) -> bool { false } fn is_draw(&self) -> bool { false } }
+/// # #[derive(Clone)] struct State(i8);
+/// # impl State { fn new() -> State { State(0) } }
+/// # impl zero_sum::State<Ply, Resolution> for State { fn execute_ply_preallocated(&self, _: &Ply, _: &mut State) -> Result<(), String> { Ok(()) } fn check_resolution(&self) -> Option<Resolution> { None } }
+/// # impl zero_sum::analysis::Evaluatable<Eval> for State { fn evaluate(&self) -> Eval { Eval(0) } }
+/// # impl zero_sum::analysis::Extrapolatable<Ply> for State { fn extrapolate(&self) -> Vec<Ply> { Vec::new() } }
+/// # impl std::fmt::Display for State { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
+/// # fn main() {
+/// let state = State::new();
+/// let (interrupt_sender, interrupt_receiver) = std::sync::mpsc::channel();
+///
+/// let mut search = PvSearch::<Eval, State, Ply, Resolution>::with_depth(5);
+/// let analysis = search.search(&state, Some(interrupt_receiver));
+/// # }
+/// ```
 pub struct PvSearch<E, S, P, R> where
     E: Evaluation,
     S: State<P, R> + Evaluatable<E> + Extrapolatable<P>,
@@ -49,6 +79,8 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
     S: State<P, R> + Evaluatable<E> + Extrapolatable<P>,
     P: Ply,
     R: Resolution {
+    /// Creates a `PvSearch` without a target depth or time goal.  It will search until
+    /// it finds a favorable resolution, or until the search is interrupted.
     pub fn new() -> PvSearch<E, S, P, R> {
         PvSearch {
             e: PhantomData,
@@ -61,12 +93,16 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
         }
     }
 
+    /// Creates a `PvSearch` that will search to a maximum depth of `depth`.
     pub fn with_depth(depth: u8) -> PvSearch<E, S, P, R> {
         let mut search = PvSearch::new();
         search.depth = depth;
         search
     }
 
+    /// Creates a `PvSearch` that will search until it predicts that it will exceed
+    /// `goal` seconds with the next depth.  `branching_factor` is used to predict
+    /// the required time to search at the next depth.
     pub fn with_goal(goal: u16, branching_factor: f32) -> PvSearch<E, S, P, R> {
         let mut search = PvSearch::new();
         search.goal = goal;
@@ -189,7 +225,7 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
         let start_move = time::precise_time_ns();
 
         let max_depth = if self.depth == 0 {
-            15
+            15 // XXX should be MAX?
         } else {
             self.depth
         };
@@ -214,7 +250,7 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
                 interrupt.as_ref(),
             );
 
-            if eval.is_win() {
+            if eval.is_win() { // XXX also break on draw
                 break;
             }
 

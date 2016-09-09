@@ -2,8 +2,12 @@
 name = "zero_sum"
 version = "0.1.0"
 authors = ["Chris Foster <cdbfoster@gmail.com>"]
+description = "An analysis engine for zero-sum games."
+repository = "https://github.com/cdbfoster/zero_sum"
+documentation = "https://cdbfoster.github.io/doc/zero_sum"
+keywords = ["zero-sum", "game", "analysis", "chess"]
 
 [dependencies]
-lazy_static = "*"
-rand = "*"
-time = "*"
+lazy_static = "0.2"
+rand = "0.3"
+time = "0.1"
