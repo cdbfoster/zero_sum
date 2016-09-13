@@ -19,6 +19,7 @@
 
 use std::marker::PhantomData;
 use std::sync::mpsc::Receiver;
+use std::u8;
 
 use time;
 
@@ -235,7 +236,7 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
         let start_move = time::precise_time_ns();
 
         let max_depth = if self.depth == 0 {
-            15 // XXX should be MAX?
+            u8::MAX - 1
         } else {
             self.depth
         };
@@ -262,8 +263,10 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
                 interrupt.as_ref(),
             );
 
-            if eval.is_win() { // XXX also break on draw
-                break;
+            if let Ok(eval_state) = state.execute_plies(&principal_variation) {
+                if eval_state.check_resolution().is_some() {
+                    break;
+                }
             }
 
             let elapsed_search = (time::precise_time_ns() - start_search) as f32 / 1000000000.0;
