@@ -263,16 +263,16 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
                 interrupt.as_ref(),
             );
 
+            let elapsed_search = (time::precise_time_ns() - start_search) as f32 / 1000000000.0;
+            let elapsed_move = (time::precise_time_ns() - start_move) as f32 / 1000000000.0;
+
+            statistics[search_depth as usize - 1][0].time = elapsed_search;
+
             if let Ok(eval_state) = state.execute_plies(&principal_variation) {
                 if eval_state.check_resolution().is_some() {
                     break;
                 }
             }
-
-            let elapsed_search = (time::precise_time_ns() - start_search) as f32 / 1000000000.0;
-            let elapsed_move = (time::precise_time_ns() - start_move) as f32 / 1000000000.0;
-
-            statistics[search_depth as usize - 1][0].time = elapsed_search;
 
             if self.goal != 0 && elapsed_move + elapsed_search * self.branching_factor > self.goal as f32 {
                 break;
