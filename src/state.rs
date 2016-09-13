@@ -85,7 +85,7 @@ pub trait State<P, R>: Clone + Display where
         for ply in plies {
             match state.execute_ply(ply) {
                 Ok(next) => state = next,
-                error => return error,
+                Err(error) => return Err(format!("Error executing plies: {}, {}", ply, error)),
             }
         }
         Ok(state)
