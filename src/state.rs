@@ -80,6 +80,7 @@ pub trait State<P, R>: Clone + Display where
         }
     }
 
+    /// Executes each ply in `plies` on the result of the previous ply.
     fn execute_plies(&self, plies: &[P]) -> Result<Self, String> {
         let mut state = self.clone();
         for ply in plies {
