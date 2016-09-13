@@ -24,6 +24,7 @@
 extern crate zero_sum;
 
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::i8;
 use std::io::{self, Write};
 use std::ops::{Add, Div, Mul, Neg, Sub};
@@ -34,7 +35,7 @@ use zero_sum::State;
 
 // Tic-Tac-Toe types
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 enum Mark {
     X,
     O,
@@ -52,7 +53,7 @@ enum Resolution {
     CatsGame,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct Board([Option<Mark>; 9], u8);
 
 impl Board {
@@ -158,6 +159,17 @@ impl zero_sum::State<Ply, Resolution> for Board {
             Some(Resolution::CatsGame)
         } else {
             None
+        }
+    }
+}
+
+impl Hash for Board {
+    fn hash<H>(&self, state: &mut H) where H: Hasher {
+        self.0.hash(state);
+        if self.1 % 2 == 0 {
+            Mark::X.hash(state);
+        } else {
+            Mark::O.hash(state);
         }
     }
 }

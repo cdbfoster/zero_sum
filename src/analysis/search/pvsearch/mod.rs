@@ -34,6 +34,7 @@ use state::State;
 use self::history::History;
 use self::ply_generator::PlyGenerator;
 use self::statistics::{StatisticPrinter, Statistics};
+use self::transposition_table::{Bound, TranspositionTable, TranspositionTableEntry};
 
 /// A PVS implementation of `Search` with a few common optimizations.
 ///
@@ -51,7 +52,7 @@ use self::statistics::{StatisticPrinter, Statistics};
 /// # impl std::fmt::Display for Ply { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
 /// # struct Resolution(i8);
 /// # impl zero_sum::Resolution for Resolution { fn is_win(&self) -> bool { false } fn is_draw(&self) -> bool { false } }
-/// # #[derive(Clone)] struct State(i8);
+/// # #[derive(Clone, Eq, Hash, PartialEq)] struct State(i8);
 /// # impl State { fn new() -> State { State(0) } }
 /// # impl zero_sum::State<Ply, Resolution> for State { fn execute_ply_preallocated(&self, _: &Ply, _: &mut State) -> Result<(), String> { Ok(()) } fn check_resolution(&self) -> Option<Resolution> { None } }
 /// # impl zero_sum::analysis::Evaluatable<Eval> for State { fn evaluate(&self) -> Eval { Eval(0) } }
@@ -70,14 +71,11 @@ pub struct PvSearch<E, S, P, R> where
     S: State<P, R> + Evaluatable<E> + Extrapolatable<P>,
     P: Ply,
     R: Resolution {
-    e: PhantomData<E>,
-    s: PhantomData<S>,
-    p: PhantomData<P>,
-    r: PhantomData<R>,
     depth: u8,
     goal: u16,
     branching_factor: f32,
     history: Rc<RefCell<History>>,
+    transposition_table: TranspositionTable<E, S, P, R>,
 }
 
 impl<E, S, P, R> PvSearch<E, S, P, R> where
@@ -89,14 +87,11 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
     /// it finds a favorable resolution, or until the search is interrupted.
     pub fn new() -> PvSearch<E, S, P, R> {
         PvSearch {
-            e: PhantomData,
-            s: PhantomData,
-            p: PhantomData,
-            r: PhantomData,
             depth: 0,
             goal: 0,
             branching_factor: 0.0,
             history: Rc::new(RefCell::new(History::new())),
+            transposition_table: TranspositionTable::new(),
         }
     }
 
@@ -142,7 +137,33 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
 
         stats[search_iteration].visited += 1;
 
-        // XXX transposition table
+        if let Some(entry) = self.transposition_table.get(state) {
+            stats[search_iteration].tt_hits += 1;
+
+            let mut usable = false;
+
+            if entry.depth >= depth &&
+              (entry.bound == Bound::Exact ||
+              (entry.bound == Bound::Upper && entry.value < alpha) ||
+              (entry.bound == Bound::Lower && entry.value >= beta)) {
+                usable = true;
+            }
+
+            if entry.bound == Bound::Exact && entry.value.is_win() {
+                usable = true;
+            }
+
+            if usable {
+                if let Ok(_) = state.execute_ply(&entry.principal_variation[0]) {
+                    stats[search_iteration].tt_saves += 1;
+
+                    principal_variation.clear();
+                    principal_variation.append(&mut entry.principal_variation.clone());
+
+                    return entry.value;
+                }
+            }
+        }
 
         let ply_generator = PlyGenerator::new(
             state,
@@ -160,7 +181,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
         };
 
         let mut first_iteration = true;
-        //let mut raised_alpha = false;
+        let mut raised_alpha = false;
 
         for ply in ply_generator {
             let next_state = if let Ok(next) = state.execute_ply(&ply) {
@@ -200,7 +221,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
 
             if next_eval > alpha {
                 alpha = next_eval;
-                //raised_alpha = true;
+                raised_alpha = true;
 
                 principal_variation.clear();
                 principal_variation.push(ply.clone());
@@ -225,7 +246,26 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
             }
         }
 
-        // XXX store tranposition table
+        if let Some(ply) = principal_variation.first() {
+            if let Ok(_) = state.execute_ply(ply) {
+                self.transposition_table.insert(state.clone(),
+                    TranspositionTableEntry {
+                        depth: depth, // XXX Are we cutting the depth short from previous searches?
+                        value: alpha,
+                        bound: if !raised_alpha {
+                            Bound::Upper
+                        } else if alpha >= beta {
+                            Bound::Lower
+                        } else {
+                            Bound::Exact
+                        },
+                        principal_variation: principal_variation.clone(),
+                        lifetime: 2,
+                    }
+                );
+                stats[search_iteration].tt_stores += 1;
+            }
+        }
 
         alpha
     }
@@ -252,11 +292,38 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
             self.depth
         };
 
-        let precalculated = 0; // XXX transposition table
+        let precalculated = match self.transposition_table.get(state) {
+            Some(entry) => {
+                if entry.bound == Bound::Exact {
+                    principal_variation.append(&mut entry.principal_variation.clone());
+                    entry.depth
+                } else {
+                    0
+                }
+            },
+            None => 0,
+        };
 
-        // XXX prepare precalculated stats
+        for depth in 1..precalculated + 1 {
+            statistics.push(vec![Statistics::new(); depth as usize]);
+        }
 
-        // XXX purge transposition table
+        // Purge transposition table
+        {
+            let mut forget = Vec::with_capacity(self.transposition_table.len() / 5);
+
+            for (key, entry) in self.transposition_table.iter_mut() {
+                if entry.lifetime > 0 {
+                    entry.lifetime -= 1;
+                } else {
+                    forget.push(key.clone());
+                }
+            }
+
+            for key in forget {
+                self.transposition_table.remove(&key);
+            }
+        }
 
         for depth in 1..max_depth + 1 - precalculated {
             let search_depth = depth + precalculated;
@@ -303,3 +370,4 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
 mod history;
 mod ply_generator;
 mod statistics;
+mod transposition_table;

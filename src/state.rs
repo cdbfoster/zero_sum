@@ -18,6 +18,7 @@
 //
 
 use std::fmt::Display;
+use std::hash::Hash;
 
 use super::{Ply, Resolution};
 
@@ -26,20 +27,27 @@ use super::{Ply, Resolution};
 /// This should represent everything that makes up a single moment of the game, i.e. in chess,
 /// this would be the board and all of its pieces, the turn number, etc.
 ///
+/// However, if the implementor of this trait does store data that changes or increments every turn,
+/// like a turn number, it is recommended to implement `Hash` manually and to exclude that data from
+/// the hash, perhaps simplifying it into the next player to move.  This is in order to allow
+/// the struct to benefit from certain search optimization techniques -- primarily a transposition
+/// table.
+///
 /// # Example
 ///
 /// For tic-tac-toe, we might have:
 ///
 /// ```rust
 /// # extern crate zero_sum;
+/// # use std::hash::{Hash, Hasher};
 /// # use zero_sum::{Ply, Resolution, State};
-/// # #[derive(Clone, Copy)]
+/// # #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 /// enum Mark { X, O }
 /// # #[derive(Clone, Debug, Hash, PartialEq)]
 /// struct Move { /* ... */ }
 /// enum End { /* ... */ }
 ///
-/// # #[derive(Clone)]
+/// # #[derive(Clone, Eq, PartialEq)]
 /// struct Board([Option<Mark>; 9], u8); // The board and the turn number
 ///
 /// impl State<Move, End> for Board {
@@ -53,13 +61,24 @@ use super::{Ply, Resolution};
 ///         # None
 ///     }
 /// }
+///
+/// impl Hash for Board {
+///     fn hash<H>(&self, state: &mut H) where H: Hasher {
+///         self.0.hash(state);
+///         if self.1 % 2 == 0 {
+///             Mark::X.hash(state);
+///         } else {
+///             Mark::O.hash(state);
+///         }
+///     }
+/// }
 /// # impl Ply for Move { }
 /// # impl Resolution for End { fn is_win(&self) -> bool { false } fn is_draw(&self) -> bool { false } }
 /// # impl std::fmt::Display for Move { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
 /// # impl std::fmt::Display for Board { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
 /// # fn main() { }
 /// ```
-pub trait State<P, R>: Clone + Display where
+pub trait State<P, R>: Clone + Display + Eq + Hash + PartialEq where
     P: Ply,
     R: Resolution {
     /// Executes a ply on the state, storing the resultant state in the preallocated `next`.
