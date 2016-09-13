@@ -79,4 +79,15 @@ pub trait State<P, R>: Clone + Display where
             Err(error) => Err(error),
         }
     }
+
+    fn execute_plies(&self, plies: &[P]) -> Result<Self, String> {
+        let mut state = self.clone();
+        for ply in plies {
+            match state.execute_ply(ply) {
+                Ok(next) => state = next,
+                error => return error,
+            }
+        }
+        Ok(state)
+    }
 }
