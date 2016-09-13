@@ -17,6 +17,8 @@
 // Copyright 2016 Chris Foster
 //
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Mutex;
 
 use rand::{Rng, SeedableRng, StdRng};
@@ -24,6 +26,7 @@ use time;
 
 use analysis::Extrapolatable;
 use ply::Ply;
+use super::history::History;
 
 lazy_static! {
     pub static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::from_seed(&[time::precise_time_ns() as usize]));
@@ -34,6 +37,7 @@ pub struct PlyGenerator<'a, X, P> where
     P: Ply {
     state: &'a X,
     principal_ply: Option<P>,
+    history: Rc<RefCell<History>>,
     plies: Vec<P>,
     operation: u8,
 }
@@ -41,10 +45,11 @@ pub struct PlyGenerator<'a, X, P> where
 impl<'a, X, P> PlyGenerator<'a, X, P> where
     X: 'a + Extrapolatable<P>,
     P: Ply {
-    pub fn new(state: &'a X, principal_ply: Option<P>) -> PlyGenerator<'a, X, P> {
+    pub fn new(state: &'a X, principal_ply: Option<P>, history: Rc<RefCell<History>>) -> PlyGenerator<'a, X, P> {
         PlyGenerator {
             state: state,
             principal_ply: principal_ply,
+            history: history,
             plies: Vec::new(),
             operation: 0,
         }
@@ -72,7 +77,16 @@ impl<'a, X, P> Iterator for PlyGenerator<'a, X, P> where
                 self.plies = self.state.extrapolate();
                 RNG.lock().unwrap().shuffle(self.plies.as_mut_slice());
 
-                // XXX history sort
+                {
+                    let history = self.history.borrow();
+
+                    if !history.is_empty() {
+                        self.plies.sort_by(|a, b| {
+                            history.get(a).unwrap_or(&0).cmp(
+                            history.get(b).unwrap_or(&0))
+                        });
+                    }
+                }
             }
 
             if self.operation == 2 {

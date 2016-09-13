@@ -54,6 +54,7 @@
 //!
 //! A working example can be found in [examples/tic_tac_toe.rs](https://github.com/cdbfoster/zero_sum/blob/master/examples/tic_tac_toe.rs).
 
+extern crate fnv;
 #[macro_use]
 extern crate lazy_static;
 extern crate rand;

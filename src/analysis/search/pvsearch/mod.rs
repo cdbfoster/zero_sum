@@ -17,7 +17,9 @@
 // Copyright 2016 Chris Foster
 //
 
+use std::cell::RefCell;
 use std::marker::PhantomData;
+use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 use std::u8;
 
@@ -29,6 +31,7 @@ use ply::Ply;
 use resolution::Resolution;
 use state::State;
 
+use self::history::History;
 use self::ply_generator::PlyGenerator;
 use self::statistics::{StatisticPrinter, Statistics};
 
@@ -74,6 +77,7 @@ pub struct PvSearch<E, S, P, R> where
     depth: u8,
     goal: u16,
     branching_factor: f32,
+    history: Rc<RefCell<History>>,
 }
 
 impl<E, S, P, R> PvSearch<E, S, P, R> where
@@ -92,6 +96,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
             depth: 0,
             goal: 0,
             branching_factor: 0.0,
+            history: Rc::new(RefCell::new(History::new())),
         }
     }
 
@@ -145,6 +150,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
                 Some(ply) => Some(ply.clone()),
                 None => None,
             },
+            self.history.clone(),
         );
 
         let mut next_principal_variation = if !principal_variation.is_empty() {
@@ -201,7 +207,11 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
                 principal_variation.append(&mut next_principal_variation.clone());
 
                 if alpha >= beta {
-                    // XXX add history
+                    {
+                        let mut history = self.history.borrow_mut();
+                        let entry = history.entry(&ply).or_insert(0);
+                        *entry += 1 << depth;
+                    }
                     break;
                 }
             }
@@ -230,7 +240,8 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
         let mut eval = E::null();
         let mut principal_variation = Vec::new();
 
-        // XXX clear history
+        self.history.borrow_mut().clear();
+
         let mut statistics = Vec::new();
 
         let start_move = time::precise_time_ns();
@@ -289,5 +300,6 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
     }
 }
 
+mod history;
 mod ply_generator;
 mod statistics;
