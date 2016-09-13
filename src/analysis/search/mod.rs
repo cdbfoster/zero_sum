@@ -62,7 +62,11 @@ impl<'a, E, S, P, R> fmt::Display for Analysis<'a, E, S, P, R> where
     R: Resolution {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "State: {}\n", self.state));
-        try!(write!(f, "Evaluation: {}\n", self.evaluation));
+        try!(write!(f, "Evaluation: {}{}", self.evaluation, if self.evaluation.is_win() {
+            " (Win)\n"
+        } else {
+            "\n"
+        }));
         try!(write!(f, "Principal Variation:"));
         for ply in &self.principal_variation {
             try!(write!(f, "\n  {}", ply));
