@@ -124,6 +124,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
         max_depth: u8,
         mut alpha: E,
         beta: E,
+        states_preallocated: &[RefCell<S>],
         stats: &mut [Statistics],
         interrupt: Option<&Receiver<()>>,
     ) -> E {
@@ -154,7 +155,10 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
             }
 
             if usable {
-                if let Ok(_) = state.execute_ply(&entry.principal_variation[0]) {
+                if let Ok(_) = state.execute_ply_preallocated(
+                    &entry.principal_variation[0],
+                    &mut states_preallocated[search_iteration].borrow_mut(),
+                ) {
                     stats[search_iteration].tt_saves += 1;
 
                     principal_variation.clear();
@@ -175,7 +179,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
         );
 
         let mut next_principal_variation = if !principal_variation.is_empty() {
-            principal_variation.clone()[1..].to_vec()
+            principal_variation[1..].to_vec()
         } else {
             Vec::new()
         };
@@ -184,16 +188,21 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
         let mut raised_alpha = false;
 
         for ply in ply_generator {
-            let next_state = if let Ok(next) = state.execute_ply(&ply) {
-                next
-            } else {
-                continue;
+            let next_state = {
+                if let Err(_) = state.execute_ply_preallocated(
+                    &ply,
+                    &mut *states_preallocated[search_iteration].borrow_mut(),
+                ) {
+                    continue;
+                }
+                states_preallocated[search_iteration].borrow()
             };
 
             let next_eval = if first_iteration {
                 -self.minimax(
                     &next_state, &mut next_principal_variation, depth - 1, max_depth,
                     -beta, -alpha,
+                    states_preallocated,
                     stats,
                     interrupt,
                 )
@@ -202,6 +211,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
                 let next_eval = -self.minimax(
                     &next_state, &mut npv, depth - 1, max_depth,
                     -alpha - E::epsilon(), -alpha,
+                    states_preallocated,
                     stats,
                     interrupt,
                 );
@@ -210,6 +220,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
                     -self.minimax(
                         &next_state, &mut next_principal_variation, depth - 1, max_depth,
                         -beta, -alpha,
+                        states_preallocated,
                         stats,
                         interrupt,
                     )
@@ -247,7 +258,10 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
         }
 
         if let Some(ply) = principal_variation.first() {
-            if let Ok(_) = state.execute_ply(ply) {
+            if let Ok(_) = state.execute_ply_preallocated(
+                ply,
+                &mut *states_preallocated[search_iteration].borrow_mut(),
+            ) {
                 self.transposition_table.insert(state.clone(),
                     TranspositionTableEntry {
                         depth: depth, // XXX Are we cutting the depth short from previous searches?
@@ -279,18 +293,17 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
     fn search<'a>(&mut self, state: &'a S, interrupt: Option<Receiver<()>>) -> Analysis<'a, E, S, P, R> {
         let mut eval = E::null();
         let mut principal_variation = Vec::new();
-
-        self.history.borrow_mut().clear();
-
         let mut statistics = Vec::new();
-
-        let start_move = time::precise_time_ns();
 
         let max_depth = if self.depth == 0 {
             u8::MAX - 1
         } else {
             self.depth
         };
+
+        let start_move = time::precise_time_ns();
+
+        self.history.borrow_mut().clear();
 
         let precalculated = match self.transposition_table.get(state) {
             Some(entry) => {
@@ -328,6 +341,7 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
         for depth in 1..max_depth + 1 - precalculated {
             let search_depth = depth + precalculated;
 
+            let states_preallocated = vec![RefCell::new(state.clone()); depth as usize];
             statistics.push(vec![Statistics::new(); search_depth as usize]);
 
             let start_search = time::precise_time_ns();
@@ -337,6 +351,7 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
                 &mut principal_variation,
                 search_depth, search_depth,
                 -E::max(), E::max(),
+                &states_preallocated,
                 &mut statistics[search_depth as usize - 1],
                 interrupt.as_ref(),
             );
