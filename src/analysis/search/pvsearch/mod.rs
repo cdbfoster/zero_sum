@@ -29,6 +29,7 @@ use resolution::Resolution;
 use state::State;
 
 use self::ply_generator::PlyGenerator;
+use self::statistics::{StatisticPrinter, Statistics};
 
 /// A PVS implementation of `Search` with a few common optimizations.
 ///
@@ -122,13 +123,18 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
         max_depth: u8,
         mut alpha: E,
         beta: E,
+        stats: &mut [Statistics],
         interrupt: Option<&Receiver<()>>,
     ) -> E {
+        let search_iteration = (max_depth - depth) as usize;
+
         if depth == 0 || state.check_resolution().is_some() {
-            // XXX stats evaluated
+            stats[search_iteration - 1].evaluated += 1;
             principal_variation.clear();
             return state.evaluate();
         }
+
+        stats[search_iteration].visited += 1;
 
         // XXX transposition table
 
@@ -160,6 +166,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
                 -self.minimax(
                     &next_state, &mut next_principal_variation, depth - 1, max_depth,
                     -beta, -alpha,
+                    stats,
                     interrupt,
                 )
             } else {
@@ -167,6 +174,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
                 let next_eval = -self.minimax(
                     &next_state, &mut npv, depth - 1, max_depth,
                     -alpha - E::epsilon(), -alpha,
+                    stats,
                     interrupt,
                 );
 
@@ -174,6 +182,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
                     -self.minimax(
                         &next_state, &mut next_principal_variation, depth - 1, max_depth,
                         -beta, -alpha,
+                        stats,
                         interrupt,
                     )
                 } else {
@@ -220,7 +229,8 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
         let mut eval = E::null();
         let mut principal_variation = Vec::new();
 
-        // XXX clear history and stats
+        // XXX clear history
+        let mut statistics = Vec::new();
 
         let start_move = time::precise_time_ns();
 
@@ -237,16 +247,18 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
         // XXX purge transposition table
 
         for depth in 1..max_depth + 1 - precalculated {
-            // XXX add statistics for this depth
+            let search_depth = depth + precalculated;
+
+            statistics.push(vec![Statistics::new(); search_depth as usize]);
 
             let start_search = time::precise_time_ns();
 
-            let search_depth = depth + precalculated;
             eval = self.minimax(
                 state,
                 &mut principal_variation,
                 search_depth, search_depth,
                 -E::max(), E::max(),
+                &mut statistics[search_depth as usize - 1],
                 interrupt.as_ref(),
             );
 
@@ -257,6 +269,8 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
             let elapsed_search = (time::precise_time_ns() - start_search) as f32 / 1000000000.0;
             let elapsed_move = (time::precise_time_ns() - start_move) as f32 / 1000000000.0;
 
+            statistics[search_depth as usize - 1][0].time = elapsed_search;
+
             if self.goal != 0 && elapsed_move + elapsed_search * self.branching_factor > self.goal as f32 {
                 break;
             }
@@ -266,10 +280,11 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
             state: state,
             evaluation: eval,
             principal_variation: principal_variation,
-            stats: None,
+            stats: Some(Box::new(StatisticPrinter(statistics))),
             _phantom: PhantomData,
         }
     }
 }
 
 mod ply_generator;
+mod statistics;
