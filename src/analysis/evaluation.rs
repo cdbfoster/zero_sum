@@ -93,17 +93,13 @@ pub trait Evaluatable<E> where
     /// # Panics
     /// Will panic if the execution of any ply in `plies` causes an error.
     fn evaluate_plies<P, R>(&self, plies: &[P]) -> E where P: Ply, R: Resolution, Self: State<P, R> {
-        let mut temp_state = self.clone();
-        for ply in plies.iter() {
-            match temp_state.execute_ply(ply) {
-                Ok(next) => temp_state = next,
-                Err(error) => panic!("Error calculating evaluation: {}, {}", error, ply),
-            }
-        }
-        if plies.len() % 2 == 0 {
-            temp_state.evaluate()
-        } else {
-            -temp_state.evaluate()
+        match self.execute_plies(plies) {
+            Ok(state) => if plies.len() % 2 == 0 {
+                state.evaluate()
+            } else {
+                -state.evaluate()
+            },
+            Err(error) => panic!("Error calculating evaluation: {}", error),
         }
     }
 }
