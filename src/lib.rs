@@ -58,7 +58,6 @@ extern crate fnv;
 #[macro_use]
 extern crate lazy_static;
 extern crate rand;
-extern crate time;
 
 pub mod analysis;
 

@@ -21,9 +21,8 @@ use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
+use std::time::Instant;
 use std::u8;
-
-use time;
 
 use analysis::{Evaluatable, Evaluation, Extrapolatable};
 use analysis::search::{Analysis, Search};
@@ -301,7 +300,7 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
             self.depth
         };
 
-        let start_move = time::precise_time_ns();
+        let start_move = Instant::now();
 
         self.history.borrow_mut().clear();
 
@@ -356,8 +355,10 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
                 interrupt.as_ref(),
             );
 
-            let elapsed_search = (time::precise_time_ns() - start_search) as f32 / 1000000000.0;
-            let elapsed_move = (time::precise_time_ns() - start_move) as f32 / 1000000000.0;
+            let elapsed_search = start_search.elapsed();
+            let elapsed_search = elapsed_search.as_secs() as f32 + elapsed_search.subsec_nanos() as f32 / 1000_000_000.0;
+            let elapsed_move = start_move.elapsed();
+            let elapsed_move = elapsed_move.as_secs() as f32 + elapsed_move.subsec_nanos() as f32 / 1000_000_000.0;
 
             statistics[search_depth as usize - 1][0].time = elapsed_search;
 

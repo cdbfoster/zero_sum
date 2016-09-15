@@ -21,16 +21,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Mutex;
 
-use rand::{Rng, SeedableRng, StdRng};
-use time;
+use rand::{Rng, thread_rng};
 
 use analysis::Extrapolatable;
 use ply::Ply;
 use super::history::History;
-
-lazy_static! {
-    pub static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::from_seed(&[time::precise_time_ns() as usize]));
-}
 
 pub struct PlyGenerator<'a, X, P> where
     X: 'a + Extrapolatable<P>,
@@ -75,7 +70,7 @@ impl<'a, X, P> Iterator for PlyGenerator<'a, X, P> where
                 self.operation += 1;
 
                 self.plies = self.state.extrapolate();
-                RNG.lock().unwrap().shuffle(self.plies.as_mut_slice());
+                thread_rng().shuffle(self.plies.as_mut_slice());
 
                 {
                     let history = self.history.borrow();

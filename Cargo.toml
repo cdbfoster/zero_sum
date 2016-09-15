@@ -13,4 +13,3 @@ keywords = ["zero-sum", "game", "analysis", "chess"]
 fnv = "1.0"
 lazy_static = "0.2"
 rand = "0.3"
-time = "0.1"
