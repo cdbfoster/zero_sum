@@ -29,7 +29,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! zero_sum = "0.1"
+//! zero_sum = "0.2"
 //! ```
 //!
 //! and add this to your crate root:

@@ -15,7 +15,7 @@ used by adding `zero_sum` to the dependencies in your project's `Cargo.toml`.
 
 ```toml
 [dependencies]
-zero_sum = "0.1"
+zero_sum = "0.2"
 ```
 
 and add this to your crate root:
