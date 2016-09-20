@@ -12,4 +12,3 @@ keywords = ["zero-sum", "game", "analysis", "chess"]
 [dependencies]
 fnv = "1.0"
 lazy_static = "0.2"
-rand = "0.3"

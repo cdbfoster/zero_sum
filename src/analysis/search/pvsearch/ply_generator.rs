@@ -19,9 +19,6 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Mutex;
-
-use rand::{Rng, thread_rng};
 
 use analysis::Extrapolatable;
 use ply::Ply;
@@ -70,7 +67,6 @@ impl<'a, X, P> Iterator for PlyGenerator<'a, X, P> where
                 self.operation += 1;
 
                 self.plies = self.state.extrapolate();
-                thread_rng().shuffle(self.plies.as_mut_slice());
 
                 {
                     let history = self.history.borrow();

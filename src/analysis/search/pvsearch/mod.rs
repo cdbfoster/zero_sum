@@ -343,7 +343,7 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
             let states_preallocated = vec![RefCell::new(state.clone()); depth as usize];
             statistics.push(vec![Statistics::new(); search_depth as usize]);
 
-            let start_search = time::precise_time_ns();
+            let start_search = Instant::now();
 
             eval = self.minimax(
                 state,
