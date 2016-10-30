@@ -17,13 +17,5 @@
 // Copyright 2016 Chris Foster
 //
 
-//! Contains the traits and tools to provide analysis of zero-sum games.
-
-pub mod search;
-
-pub use self::evaluation::{Evaluatable, Evaluation};
-pub use self::extrapolation::Extrapolatable;
-
-#[macro_use]
-mod evaluation;
-mod extrapolation;
+#[cfg(feature = "with_tak")]
+pub mod tak;

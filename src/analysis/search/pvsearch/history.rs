@@ -63,3 +63,49 @@ impl History {
         hasher.finish()
     }
 }
+
+#[cfg(all(test, feature = "with_tak"))]
+mod test_tak {
+    use super::*;
+    use analysis::search::{Search, PvSearch};
+    use test::{self, Bencher};
+
+    use impls::tak::*;
+    use impls::tak::state::evaluation::Evaluation;
+
+    #[bench]
+    fn bench_history_empty_add(b: &mut Bencher) {
+        let mut history = History::new();
+        let ply = Ply::from_ptn("a1", Color::Black).unwrap();
+
+        b.iter(|| {
+            let entry = history.entry(test::black_box(&ply)).or_insert(0);
+            *entry += 1;
+        });
+    }
+
+    #[bench]
+    fn bench_history_full_add(b: &mut Bencher) {
+        let mut search = PvSearch::<Evaluation, State, Ply, Resolution>::with_depth(5);
+        let state = State::new(5);
+        search.search(&state, None);
+
+        let mut history = search.history.borrow_mut();
+        let ply = Ply::from_ptn("a1", Color::Black).unwrap();
+
+        b.iter(|| {
+            let entry = history.entry(test::black_box(&ply)).or_insert(0);
+            *entry += 1;
+        });
+    }
+
+    #[bench]
+    fn bench_history_hash(b: &mut Bencher) {
+        let history = History::new();
+        let ply = Ply::from_ptn("2a2>11", Color::White).unwrap();
+
+        b.iter(|| {
+            history.hash(test::black_box(&ply))
+        });
+    }
+}

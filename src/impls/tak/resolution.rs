@@ -17,13 +17,28 @@
 // Copyright 2016 Chris Foster
 //
 
-//! Contains the traits and tools to provide analysis of zero-sum games.
+use impls::tak::Color;
+use resolution;
 
-pub mod search;
+pub enum Resolution {
+    Road(Color),
+    Flat(Color),
+    Draw,
+}
 
-pub use self::evaluation::{Evaluatable, Evaluation};
-pub use self::extrapolation::Extrapolatable;
+impl resolution::Resolution for Resolution {
+    fn is_win(&self) -> bool {
+        match *self {
+            Resolution::Road(_) |
+            Resolution::Flat(_) => true,
+            Resolution::Draw => false,
+        }
+    }
 
-#[macro_use]
-mod evaluation;
-mod extrapolation;
+    fn is_draw(&self) -> bool {
+        match *self {
+            Resolution::Draw => true,
+            _ => false,
+        }
+    }
+}

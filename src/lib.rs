@@ -54,15 +54,24 @@
 //!
 //! A working example can be found in [examples/tic_tac_toe.rs](https://github.com/cdbfoster/zero_sum/blob/master/examples/tic_tac_toe.rs).
 
+#![feature(test)]
+
 extern crate fnv;
+extern crate test;
+
+#[cfg(feature = "with_tak")]
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
 pub mod analysis;
 
 pub use self::ply::Ply;
 pub use self::resolution::Resolution;
 pub use self::state::State;
+
+#[cfg(feature = "with_tak")]
+pub mod impls;
 
 mod ply;
 mod resolution;

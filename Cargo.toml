@@ -1,14 +1,20 @@
 [package]
 name = "zero_sum"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Chris Foster <cdbfoster@gmail.com>"]
 license = "GPL-3.0"
 description = "An analysis engine for zero-sum games."
 repository = "https://github.com/cdbfoster/zero_sum"
 readme = "README.md"
 documentation = "https://cdbfoster.github.io/doc/zero_sum"
-keywords = ["zero-sum", "game", "analysis", "chess"]
+keywords = ["zero-sum", "game", "analysis", "chess", "tak", "tic-tac-toe"]
+
+[features]
+with_tak = [ "lazy_static" ]
 
 [dependencies]
 fnv = "1.0"
-lazy_static = "0.2"
+lazy_static = { version = "0.2", optional = true }
+
+[profile.release]
+debug = true

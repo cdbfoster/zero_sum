@@ -134,12 +134,39 @@ pub trait Evaluatable<E> where
 #[macro_export]
 macro_rules! prepare_evaluation_tuple {
     ($type_: ident) => {
-        impl_tuple_operation! { impl Add for $type_ { fn add } }
-        impl_tuple_operation! { impl Sub for $type_ { fn sub } }
-        impl_tuple_operation! { impl Mul for $type_ { fn mul } }
-        impl_tuple_operation! { impl Div for $type_ { fn div } }
+        impl ::std::ops::Add for $type_ {
+            type Output = $type_;
+            fn add(self, $type_(b): $type_) -> $type_ {
+                let $type_(a) = self;
+                $type_(a + b)
+            }
+        }
 
-        impl Neg for $type_ {
+        impl ::std::ops::Sub for $type_ {
+            type Output = $type_;
+            fn sub(self, $type_(b): $type_) -> $type_ {
+                let $type_(a) = self;
+                $type_(a - b)
+            }
+        }
+
+        impl ::std::ops::Mul for $type_ {
+            type Output = $type_;
+            fn mul(self, $type_(b): $type_) -> $type_ {
+                let $type_(a) = self;
+                $type_(a * b)
+            }
+        }
+
+        impl ::std::ops::Div for $type_ {
+            type Output = $type_;
+            fn div(self, $type_(b): $type_) -> $type_ {
+                let $type_(a) = self;
+                $type_(a / b)
+            }
+        }
+
+        impl ::std::ops::Neg for $type_ {
             type Output = $type_;
             fn neg(self) -> $type_ {
                 let $type_(a) = self;
@@ -147,27 +174,10 @@ macro_rules! prepare_evaluation_tuple {
             }
         }
 
-        impl std::fmt::Display for $type_ {
-            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        impl ::std::fmt::Display for $type_ {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                 let $type_(a) = *self;
                 write!(f, "{}", a)
-            }
-        }
-    }
-}
-
-/// Implement a binary operation for a tuple struct in terms of the enclosed type.
-///
-/// Usually, it shouldn't be necessary to use this macro directly; instead consider
-/// using [prepare_evaluation_tuple](macro.prepare_evaluation_tuple.html).
-#[macro_export]
-macro_rules! impl_tuple_operation {
-    (impl $trait_: ident for $type_: ident { fn $method: ident }) => {
-        impl $trait_ for $type_ {
-            type Output = $type_;
-            fn $method(self, $type_(b): $type_) -> $type_ {
-                let $type_(a) = self;
-                $type_(a.$method(&b))
             }
         }
     }
