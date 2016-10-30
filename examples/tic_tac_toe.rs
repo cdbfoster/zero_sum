@@ -27,7 +27,6 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::i8;
 use std::io::{self, Write};
-use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use zero_sum::analysis::Evaluation;
 use zero_sum::analysis::search::Search;
