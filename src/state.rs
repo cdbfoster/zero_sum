@@ -20,7 +20,8 @@
 use std::fmt::Display;
 use std::hash::Hash;
 
-use super::{Ply, Resolution};
+use ply::Ply;
+use resolution::Resolution;
 
 /// The state of the game.
 ///
