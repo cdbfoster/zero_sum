@@ -235,3 +235,42 @@ impl state::State<Ply, Resolution> for State {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use test::{self, Bencher};
+
+    use impls::tak::*;
+    use state::State as StateTrait;
+
+    #[bench]
+    fn bench_state_execute_ply_place(b: &mut Bencher) {
+        let state = State::from_tps("[TPS \"21,2,x,1212221C,x/21,2,2,21,x/x2,2,x2/x4,21/1112C,1,21,x2 2 22\"]").unwrap();
+        let mut next = State::new(5);
+        let ply = Ply::from_ptn("c2", Color::Black).unwrap();
+
+        b.iter(|| {
+            test::black_box(&state).execute_ply_preallocated(&ply, &mut next).unwrap()
+        });
+    }
+
+    #[bench]
+    fn bench_state_execute_ply_slide(b: &mut Bencher) {
+        let state = State::from_tps("[TPS \"21,2,x,1212,x/21,2,2,2,x/x2,2,1221C,x/x4,21/1112C,1,21,x2 1 22\"]").unwrap();
+        let mut next = State::new(5);
+        let ply = Ply::from_ptn("4d3+13", Color::White).unwrap();
+
+        b.iter(|| {
+            test::black_box(&state).execute_ply_preallocated(&ply, &mut next).unwrap()
+        });
+    }
+
+    #[bench]
+    fn bench_state_check_resolution(b: &mut Bencher) {
+        let state = State::from_tps("[TPS \"2112S,22221C,112S,122,x/212,x,2,1S,2/1S,x,2,2,1/1,2111112C,x,1,21/x,1,212,1,1 2 36\"]").unwrap();
+
+        b.iter(|| {
+            test::black_box(&state).check_resolution().unwrap()
+        });
+    }
+}
