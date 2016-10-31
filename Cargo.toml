@@ -10,11 +10,12 @@ documentation = "https://cdbfoster.github.io/doc/zero_sum"
 keywords = ["zero-sum", "game", "analysis", "chess", "tak", "tic-tac-toe"]
 
 [features]
-with_tak = [ "lazy_static" ]
+with_tak = [ "lazy_static", "rand" ]
 
 [dependencies]
 fnv = "1.0"
 lazy_static = { version = "0.2", optional = true }
+rand = { version = "0.3", optional = true }
 
 [profile.release]
 debug = true

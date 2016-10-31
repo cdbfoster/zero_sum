@@ -17,6 +17,8 @@
 // Copyright 2016 Chris Foster
 //
 
+use rand::{Rng, thread_rng};
+
 use analysis;
 use impls::tak::{Color, Direction, Piece};
 use impls::tak::ply::Ply;
@@ -25,8 +27,6 @@ use impls::tak::state::State;
 lazy_static! {
     static ref SLIDE_TABLE: Vec<Vec<Vec<u8>>> = generate_slide_table(8);
 }
-
-// XXX Shuffle randomly here
 
 impl analysis::Extrapolatable<Ply> for State {
     fn extrapolate(&self) -> Vec<Ply> {
@@ -110,6 +110,8 @@ impl analysis::Extrapolatable<Ply> for State {
                 }
             }
         }
+
+        thread_rng().shuffle(&mut plies);
 
         plies
     }

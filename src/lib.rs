@@ -63,6 +63,9 @@ extern crate test;
 #[macro_use]
 extern crate lazy_static;
 
+#[cfg(feature = "with_tak")]
+extern crate rand;
+
 #[macro_use]
 pub mod analysis;
 
