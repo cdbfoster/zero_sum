@@ -343,7 +343,7 @@ fn evaluate_influence(
         result
     }
 
-    let blocks = total_pieces & (m.standing_stones | m.capstones);
+    let blocks = m.standing_stones | m.capstones;
     let own_blocks = blocks & own_pieces;
 
     let stack_levels = {
