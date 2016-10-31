@@ -79,8 +79,7 @@ mod test_tak {
         let ply = Ply::from_ptn("a1", Color::Black).unwrap();
 
         b.iter(|| {
-            let entry = history.entry(test::black_box(&ply)).or_insert(0);
-            *entry += 1;
+            history.entry(test::black_box(&ply)).or_insert(0);
         });
     }
 
@@ -94,8 +93,7 @@ mod test_tak {
         let ply = Ply::from_ptn("a1", Color::Black).unwrap();
 
         b.iter(|| {
-            let entry = history.entry(test::black_box(&ply)).or_insert(0);
-            *entry += 1;
+            history.entry(test::black_box(&ply)).or_insert(0);
         });
     }
 
