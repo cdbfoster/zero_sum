@@ -101,6 +101,7 @@ mod test_tak {
     use impls::tak::state::evaluation::Evaluation;
 
     #[bench]
+    #[ignore]
     fn bench_ply_generator_drain(b: &mut Bencher) {
         let mut search = PvSearch::<Evaluation, State, Ply, Resolution>::with_depth(5);
         let state = State::new(5);
