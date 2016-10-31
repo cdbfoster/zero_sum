@@ -93,10 +93,10 @@ impl<'a, X, P> Iterator for PlyGenerator<'a, X, P> where
 
 #[cfg(all(test, feature = "with_tak"))]
 mod test_tak {
-    use super::*;
-    use analysis::search::{Search, PvSearch};
     use test::Bencher;
 
+    use super::*;
+    use analysis::search::{Search, PvSearch};
     use impls::tak::*;
     use impls::tak::state::evaluation::Evaluation;
 

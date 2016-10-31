@@ -90,10 +90,9 @@ impl<E, S, P, R> TranspositionTable<E, S, P, R> where
 
 #[cfg(all(test, feature = "with_tak"))]
 mod test_tak {
-    use super::*;
-    use analysis::search::{Search, PvSearch};
     use test::{self, Bencher};
 
+    use super::*;
     use impls::tak::*;
     use impls::tak::state::evaluation::Evaluation;
 
