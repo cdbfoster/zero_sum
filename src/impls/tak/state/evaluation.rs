@@ -67,7 +67,7 @@ const WEIGHT: Weights = Weights {
 
     threat:             200,
 
-    influence:         (20, 15, -5),
+    influence:         ( 20,  15,  -5),
 
     group: [0, 0, 100, 200, 400, 600, 0, 0],
 };
