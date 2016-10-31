@@ -19,7 +19,7 @@
 
 use std::num::Wrapping;
 
-use impls::tak::{Color, Piece};
+use impls::tak::{Color, Piece, State};
 
 pub type Bitmap = u64;
 
@@ -68,6 +68,36 @@ impl Metadata {
             p1_road_groups: Vec::new(),
             p2_road_groups: Vec::new(),
         }
+    }
+
+    pub fn from_state(state: &State) -> Metadata {
+        let board_size = state.board.len();
+
+        let mut metadata = Metadata::new(board_size);
+
+        for x in 0..board_size {
+            for y in 0..board_size {
+                for z in 0..state.board[x][y].len() {
+                    if z > 0 {
+                        match state.board[x][y][z - 1] {
+                            Piece::Flatstone(color) => metadata.cover_flatstone(
+                                color, x, y,
+                            ),
+                            ref block => metadata.remove_blocking_stone(block, x, y),
+                        }
+                    }
+
+                    match state.board[x][y][z] {
+                        Piece::Flatstone(color) => metadata.add_flatstone(
+                            color, x, y, z,
+                        ),
+                        ref block => metadata.add_blocking_stone(block, x, y),
+                    }
+                }
+            }
+        }
+
+        metadata
     }
 
     pub fn add_flatstone(&mut self, color: Color, x: usize, y: usize, z: usize) {

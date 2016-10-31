@@ -28,7 +28,7 @@ use impls::tak::state::metadata::{Bitmap, BitmapInterface, BOARD, EDGE, Metadata
 use state::State as StateTrait;
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub struct Evaluation(i32);
+pub struct Evaluation(pub i32);
 
 prepare_evaluation_tuple!(Evaluation);
 

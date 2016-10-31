@@ -19,6 +19,7 @@
 
 use std::fmt::{self, Write};
 use std::hash::{Hash, Hasher};
+use std::str::FromStr;
 
 use impls::tak::{Color, Piece};
 
@@ -59,6 +60,140 @@ impl State {
             ply_count: 0,
             metadata: Metadata::new(board_size),
         }
+    }
+
+    pub fn from_tps(tps: &str) -> Option<State> { // XXX Return Result<State, String>
+        if &tps[0..6] != "[TPS \"" || &tps[(tps.len() - 2)..] != "\"]" {
+            return None;
+        }
+
+        let mut chars = tps[6..(tps.len() - 2)].chars();
+
+        let mut x = 0;
+        let mut y = 0;
+        let mut board: Vec<Vec<Vec<Piece>>> = Vec::new();
+        let mut piece_color = None;
+
+        let mut p1_used_flatstones = 0;
+        let mut p1_used_capstones = 0;
+
+        let mut p2_used_flatstones = 0;
+        let mut p2_used_capstones = 0;
+
+        fn ensure_dimensions(board: &mut Vec<Vec<Vec<Piece>>>, x: usize, y: usize) {
+            if x >= board.len() {
+                for _ in board.len()..(x + 1) {
+                    board.push(Vec::new());
+                }
+            }
+
+            for column in board.iter_mut() {
+                if y >= column.len() {
+                    for _ in column.len()..(y + 1) {
+                        column.push(Vec::new());
+                    }
+                }
+            }
+        }
+
+        let mut next = chars.next();
+        while next.is_some() {
+            ensure_dimensions(&mut board, x, y);
+
+            if let Some(color) = piece_color {
+                let piece = match next {
+                    Some('S') => Piece::StandingStone(color),
+                    Some('C') => Piece::Capstone(color),
+                    _ => Piece::Flatstone(color),
+                };
+
+                let (used_flatstones, used_capstones) = match color {
+                    Color::White => (&mut p1_used_flatstones, &mut p1_used_capstones),
+                    Color::Black => (&mut p2_used_flatstones, &mut p2_used_capstones),
+                };
+
+                match piece {
+                    Piece::Capstone(_) => *used_capstones += 1,
+                    _ => *used_flatstones += 1,
+                }
+
+                board[x][y].push(piece);
+
+                piece_color = None;
+                match next {
+                    Some('S') |
+                    Some('C') => next = chars.next(),
+                    _ => (),
+                }
+            }
+
+            match next {
+                Some('x') => match chars.next() {
+                    Some(c) => if c.is_digit(10) {
+                        x += (c as u8 - 49) as usize;
+                    } else if c == ',' {
+                        x += 1;
+                    } else if c == '/' {
+                        x = 0;
+                        y += 1;
+                    } else if c == ' ' {
+                        break;
+                    } else {
+                        return None;
+                    },
+                    _ => return None,
+                },
+                Some(',') => {
+                    x += 1;
+                },
+                Some('/') => {
+                    x = 0;
+                    y += 1;
+                },
+                Some(' ') => break,
+                Some('1') => piece_color = Some(Color::White),
+                Some('2') => piece_color = Some(Color::Black),
+                _ => return None,
+            }
+
+            next = chars.next();
+        }
+
+        let ply_count = {
+            let player = match chars.next() {
+                Some('1') => 0,
+                Some('2') => 1,
+                _ => return None,
+            };
+
+            chars.next();
+
+            let turn_count = match u16::from_str(chars.as_str()) {
+                Ok(c) => if c > 0 {
+                    c - 1
+                } else {
+                    return None
+                },
+                _ => return None,
+            };
+
+            turn_count * 2 + player
+        };
+
+        for column in &mut board {
+            column.reverse();
+        }
+
+        let mut state = State::new(board.len());
+        state.p1_flatstones -= p1_used_flatstones;
+        state.p1_capstones -= p1_used_capstones;
+        state.p2_flatstones -= p2_used_flatstones;
+        state.p2_capstones -= p2_used_capstones;
+        state.board = board;
+        state.ply_count = ply_count;
+        state.metadata = Metadata::from_state(&state);
+
+        Some(state)
     }
 }
 

@@ -87,3 +87,49 @@ impl<E, S, P, R> TranspositionTable<E, S, P, R> where
         self.map.iter_mut()
     }
 }
+
+#[cfg(all(test, feature = "with_tak"))]
+mod test_tak {
+    use super::*;
+    use analysis::search::{Search, PvSearch};
+    use test::{self, Bencher};
+
+    use impls::tak::*;
+    use impls::tak::state::evaluation::Evaluation;
+
+    #[bench]
+    fn bench_tt_empty_add(b: &mut Bencher) {
+        let mut transposition_table = TranspositionTable::<Evaluation, State, Ply, Resolution>::new();
+        let state = State::from_tps("[TPS \"x2,1,x2/x,1,12,1,x/1,12,121,12,1/x,1,12,1,x/x2,1,x2 1 10\"]").unwrap();
+
+        b.iter(|| {
+            let state = test::black_box(&state).clone();
+
+            let entry = TranspositionTableEntry {
+                depth: 7,
+                value: Evaluation(0),
+                bound: Bound::Lower,
+                principal_variation: Vec::<Ply>::new(),
+                lifetime: 3,
+            };
+            transposition_table.insert(test::black_box(state), entry);
+        });
+    }
+
+    #[bench]
+    fn bench_tt_empty_add_overhead(b: &mut Bencher) {
+        let state = State::from_tps("[TPS \"x2,1,x2/x,1,12,1,x/1,12,121,12,1/x,1,12,1,x/x2,1,x2 1 10\"]").unwrap();
+
+        b.iter(|| {
+            test::black_box(&state).clone();
+
+            let _ = TranspositionTableEntry {
+                depth: 7,
+                value: Evaluation(0),
+                bound: Bound::Lower,
+                principal_variation: Vec::<Ply>::new(),
+                lifetime: 3,
+            };
+        });
+    }
+}
