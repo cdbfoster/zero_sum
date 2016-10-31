@@ -141,3 +141,22 @@ fn generate_slide_table(size: u8) -> Vec<Vec<Vec<u8>>> {
 
     result
 }
+
+#[cfg(test)]
+mod test {
+    use test::{self, Bencher};
+
+    use analysis::Extrapolatable;
+    use impls::tak::*;
+
+    lazy_static! {
+        static ref STATE: State = State::from_tps("[TPS \"21,22221C,1,12212S,x/2121,2S,2,1S,2/x2,2,2,x/1,2111112C,2,x,21/x,1,21,x2 1 32\"]").unwrap();
+    }
+
+    #[bench]
+    fn bench_extrapolate(b: &mut Bencher) {
+        b.iter(|| {
+            test::black_box(&STATE).extrapolate()
+        });
+    }
+}
