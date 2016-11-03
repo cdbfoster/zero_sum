@@ -22,19 +22,31 @@ use std::collections::BTreeMap;
 use std::collections::btree_map::Entry;
 use std::hash::Hasher;
 
-use fnv::FnvHasher;
-
 use ply::Ply;
 
+struct SingleHasher(u64);
+
+impl Hasher for SingleHasher {
+    fn write(&mut self, _: &[u8]) { }
+
+    fn write_u64(&mut self, i: u64) {
+        self.0 = i;
+    }
+
+    fn finish(&self) -> u64 {
+        self.0
+    }
+}
+
 pub struct History {
-    hasher: RefCell<FnvHasher>,
+    hasher: RefCell<SingleHasher>,
     map: BTreeMap<u64, u32>,
 }
 
 impl History {
     pub fn new() -> History {
         History {
-            hasher: RefCell::new(FnvHasher::default()),
+            hasher: RefCell::new(SingleHasher(0)),
             map: BTreeMap::new(),
         }
     }
