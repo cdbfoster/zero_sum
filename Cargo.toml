@@ -7,7 +7,7 @@ description = "An analysis engine for zero-sum games with game implementations."
 repository = "https://github.com/cdbfoster/zero_sum"
 readme = "README.md"
 documentation = "https://cdbfoster.github.io/doc/zero_sum"
-keywords = ["zero-sum", "game", "analysis", "chess", "tak", "tic-tac-toe"]
+keywords = [ "zero-sum", "game", "analysis", "chess", "tak", "tic-tac-toe" ]
 
 [features]
 with_tak = [ "lazy_static", "rand" ]
