@@ -25,10 +25,22 @@ pub enum Mark {
     O,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Ply {
     pub mark: Mark,
     pub coordinates: (usize, usize),
+}
+
+impl Hash for Ply {
+    fn hash<H>(&self, state: &mut H) where H: Hasher {
+        let mut hash = match self.mark {
+            Mark::X => 1 as u64,
+            Mark::O => 0 as u64,
+        };
+        hash = (hash << 8) | self.coordinates.0 as u64;
+        hash = (hash << 8) | self.coordinates.1 as u64;
+        state.write_u64(hash);
+    }
 }
 
 #[derive(Debug)]
