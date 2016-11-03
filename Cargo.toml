@@ -18,6 +18,3 @@ with_tic_tac_toe = []
 fnv = "1.0"
 lazy_static = { version = "0.2", optional = true }
 rand = { version = "0.3", optional = true }
-
-[profile.release]
-debug = true
