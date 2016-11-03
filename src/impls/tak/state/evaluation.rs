@@ -27,6 +27,9 @@ use impls::tak::state::State;
 use impls::tak::state::metadata::{Bitmap, BitmapInterface, BOARD, EDGE, Metadata};
 use state::State as StateTrait;
 
+/// Represents the evaluation of a state.
+///
+/// A win/loss is represented by a quantity of at least/most +/- 99,000.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Evaluation(pub i32);
 

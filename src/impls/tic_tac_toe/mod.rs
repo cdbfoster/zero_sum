@@ -17,14 +17,18 @@
 // Copyright 2016 Chris Foster
 //
 
+//! The game of tic-tac-toe.
+
 use std::hash::{Hash, Hasher};
 
+/// Either X or O.
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum Mark {
     X,
     O,
 }
 
+/// The placement of a mark in an empty space.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ply {
     pub mark: Mark,
@@ -43,20 +47,24 @@ impl Hash for Ply {
     }
 }
 
+/// Either a win or a cat's game.
 #[derive(Debug)]
 pub enum Resolution {
     Win(Mark),
     CatsGame,
 }
 
+/// The 3x3 game board.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Board(pub [Option<Mark>; 9], pub u8);
 
 impl Board {
+    /// Creates an empty board.
     pub fn new() -> Board {
         Board([None; 9], 0)
     }
 
+    /// Returns the mark that will make the next move.
     pub fn next_mark(&self) -> Mark {
         if self.1 % 2 == 0 {
             Mark::X

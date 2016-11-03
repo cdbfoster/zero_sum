@@ -17,6 +17,8 @@
 // Copyright 2016 Chris Foster
 //
 
+//! Contains implementations of the library for a few zero-sum games.
+
 #[cfg(feature = "with_tak")]
 pub mod tak;
 

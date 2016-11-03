@@ -25,21 +25,32 @@ use impls::tak::{Color, Piece};
 
 use self::metadata::Metadata;
 
+/// The state of the game.
 #[derive(Debug, Eq, PartialEq)]
 pub struct State {
+    /// Player 1's remaining flatstones.
     pub p1_flatstones: u8,
+    /// Player 1's remaining capstones.
     pub p1_capstones: u8,
 
+    /// Player 2's remaining flatstones.
     pub p2_flatstones: u8,
+    /// Player 2's remaining capstones.
     pub p2_capstones: u8,
 
+    /// The board of pieces.
     pub board: Vec<Vec<Vec<Piece>>>,
+    /// The number of half-moves passed since the start.
     pub ply_count: u16,
 
     metadata: Metadata,
 }
 
 impl State {
+    /// Creates a blank state of the specified board size.
+    ///
+    /// # Panics
+    /// This function panics if it is passed a board size less than 3 or greater than 8.
     pub fn new(board_size: usize) -> State {
         let (flatstone_count, capstone_count) = match board_size {
             3 => (10, 0),
@@ -62,6 +73,9 @@ impl State {
         }
     }
 
+    /// Creates a state from a string in TPS format, i.e. `"[TPS \"x5/x5/x5/x5/x5 1 1\"]"`.
+    ///
+    /// Returns `None` if the provided string has an error.
     pub fn from_tps(tps: &str) -> Option<State> { // XXX Return Result<State, String>
         if &tps[0..6] != "[TPS \"" || &tps[(tps.len() - 2)..] != "\"]" {
             return None;

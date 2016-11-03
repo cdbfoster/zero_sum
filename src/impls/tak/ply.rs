@@ -23,13 +23,16 @@ use std::hash::{Hash, Hasher};
 use impls::tak::{Color, Direction, Piece};
 use ply;
 
+/// Represents either a piece placement or a slide.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Ply {
+    /// Placement of a stone in an empty space.
     Place {
         x: usize,
         y: usize,
         piece: Piece
     },
+    /// Slide of a stone or stack of stones already on the board.
     Slide {
         x: usize,
         y: usize,

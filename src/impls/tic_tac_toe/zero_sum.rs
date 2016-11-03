@@ -96,6 +96,9 @@ impl analysis::Extrapolatable<Ply> for Board {
     }
 }
 
+/// The evaluation of a board.
+///
+/// A win/loss is represented by at least/most +/- 5.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Evaluation(pub i8);
 

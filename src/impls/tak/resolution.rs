@@ -20,13 +20,20 @@
 use impls::tak::Color;
 use resolution;
 
+/// The ways a game can end.
 pub enum Resolution {
+    /// One player has completed a road.
     Road(Color),
+    /// A player has run out of stones or the board is completely full,
+    /// and one player has more flatstones.
     Flat(Color),
+    /// A player has run out of stones or the board is completely full,
+    /// and neither player has more flatstones.
     Draw,
 }
 
 impl resolution::Resolution for Resolution {
+    /// Returns true if the value is either a `Road` or a `Flat`; false otherwise.
     fn is_win(&self) -> bool {
         match *self {
             Resolution::Road(_) |
@@ -35,6 +42,7 @@ impl resolution::Resolution for Resolution {
         }
     }
 
+    /// Returns true if the value is a `Draw`.
     fn is_draw(&self) -> bool {
         match *self {
             Resolution::Draw => true,

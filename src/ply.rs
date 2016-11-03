@@ -22,6 +22,8 @@ use std::hash::Hash;
 
 /// This trait marks a ply.
 ///
+/// Implementors should implement Hash manually, writing only a single u64 to the hasher.
+///
 /// # Example
 ///
 /// For tic-tac-toe, we might have:
