@@ -83,7 +83,6 @@ mod test_tak {
     use super::*;
     use analysis::search::{Search, PvSearch};
     use impls::tak::*;
-    use impls::tak::state::evaluation::Evaluation;
 
     #[bench]
     fn bench_history_empty_add(b: &mut Bencher) {

@@ -94,7 +94,6 @@ mod test_tak {
 
     use super::*;
     use impls::tak::*;
-    use impls::tak::state::evaluation::Evaluation;
 
     #[bench]
     fn bench_tt_empty_add(b: &mut Bencher) {
