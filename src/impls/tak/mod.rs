@@ -70,8 +70,8 @@ impl Direction {
 
 pub use self::ply::Ply;
 pub use self::resolution::Resolution;
-pub use self::state::State;
+pub use self::state::{Evaluation, State};
 
 mod ply;
 mod resolution;
-pub mod state;
+mod state;

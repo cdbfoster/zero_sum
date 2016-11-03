@@ -21,7 +21,6 @@ extern crate zero_sum;
 
 use zero_sum::analysis::search::Search;
 use zero_sum::impls::tak::*;
-use zero_sum::impls::tak::state::evaluation::Evaluation;
 
 fn main() {
     let state = State::new(5);
