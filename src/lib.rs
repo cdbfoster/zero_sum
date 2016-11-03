@@ -73,7 +73,7 @@ pub use self::ply::Ply;
 pub use self::resolution::Resolution;
 pub use self::state::State;
 
-#[cfg(feature = "with_tak")]
+#[cfg(any(feature = "with_tak", feature = "with_tic_tac_toe"))]
 pub mod impls;
 
 mod ply;

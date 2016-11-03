@@ -19,3 +19,6 @@
 
 #[cfg(feature = "with_tak")]
 pub mod tak;
+
+#[cfg(feature = "with_tic_tac_toe")]
+pub mod tic_tac_toe;
