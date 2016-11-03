@@ -17,7 +17,6 @@
 // Copyright 2016 Chris Foster
 //
 
-#[macro_use]
 extern crate zero_sum;
 
 use std::io::{self, Write};
