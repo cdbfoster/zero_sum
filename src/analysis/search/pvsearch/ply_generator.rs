@@ -71,12 +71,7 @@ impl<'a, X, P> Iterator for PlyGenerator<'a, X, P> where
                 {
                     let history = self.history.borrow();
 
-                    if !history.is_empty() {
-                        self.plies.sort_by(|a, b| {
-                            history.get(a).unwrap_or(&0).cmp(
-                            history.get(b).unwrap_or(&0))
-                        });
-                    }
+                    history.sort_plies(&mut self.plies);
                 }
             }
 

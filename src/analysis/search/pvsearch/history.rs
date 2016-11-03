@@ -69,10 +69,51 @@ impl History {
         self.map.clear();
     }
 
+    pub fn sort_plies<P>(&self, plies: &mut [P]) where P: Ply {
+        if self.is_empty() {
+            return;
+        }
+
+        let mut histories = Vec::with_capacity(plies.len());
+        for (index, ply) in plies.iter().enumerate() {
+            histories.push((*self.get(ply).unwrap_or(&0), index));
+        }
+
+        histories.sort_by(|a, b| {
+            a.0.cmp(&b.0)
+        });
+
+        let mut final_indices = vec![0; plies.len()];
+        for (index, starting_index) in histories.iter().enumerate() {
+            final_indices[starting_index.1] = index;
+        }
+
+        apply_permutation(plies, &final_indices);
+    }
+
     fn hash<P>(&self, ply: &P) -> u64 where P: Ply {
         let mut hasher = self.hasher.borrow_mut();
         ply.hash(&mut *hasher);
         hasher.finish()
+    }
+}
+
+fn apply_permutation<T>(v: &mut [T], p: &[usize]) {
+    let mut done = vec![false; v.len()];
+
+    for i in 0..v.len() {
+        if done[i] {
+            continue;
+        }
+
+        done[i] = true;
+
+        let mut j = p[i];
+        while i != j {
+            v.swap(i, j);
+            done[j] = true;
+            j = p[j];
+        }
     }
 }
 
