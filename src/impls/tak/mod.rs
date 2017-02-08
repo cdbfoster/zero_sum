@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with zero_sum. If not, see <http://www.gnu.org/licenses/>.
 //
-// Copyright 2016 Chris Foster
+// Copyright 2016-2017 Chris Foster
 //
 
 //! The game of [tak](http://cheapass.com/tak/).

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with zero_sum. If not, see <http://www.gnu.org/licenses/>.
 //
-// Copyright 2016 Chris Foster
+// Copyright 2016-2017 Chris Foster
 //
 
 //! An analysis engine for zero-sum games.
@@ -32,7 +32,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! zero_sum = "1.0"
+//! zero_sum = "1.1"
 //! ```
 //!
 //! and add this to your crate root:
