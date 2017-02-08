@@ -132,7 +132,9 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
         let search_iteration = (max_depth - depth) as usize;
 
         if depth == 0 || state.check_resolution().is_some() {
-            stats[search_iteration - 1].evaluated += 1;
+            if search_iteration > 0 {
+                stats[search_iteration - 1].evaluated += 1;
+            }
             principal_variation.clear();
             return state.evaluate();
         }
