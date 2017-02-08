@@ -17,8 +17,7 @@
 // Copyright 2016 Chris Foster
 //
 
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use analysis::Extrapolatable;
 use ply::Ply;
@@ -29,7 +28,7 @@ pub struct PlyGenerator<'a, X, P> where
     P: Ply {
     state: &'a X,
     principal_ply: Option<P>,
-    history: Rc<RefCell<History>>,
+    history: Arc<Mutex<History>>,
     plies: Vec<P>,
     operation: u8,
 }
@@ -37,7 +36,7 @@ pub struct PlyGenerator<'a, X, P> where
 impl<'a, X, P> PlyGenerator<'a, X, P> where
     X: 'a + Extrapolatable<P>,
     P: Ply {
-    pub fn new(state: &'a X, principal_ply: Option<P>, history: Rc<RefCell<History>>) -> PlyGenerator<'a, X, P> {
+    pub fn new(state: &'a X, principal_ply: Option<P>, history: Arc<Mutex<History>>) -> PlyGenerator<'a, X, P> {
         PlyGenerator {
             state: state,
             principal_ply: principal_ply,
@@ -69,7 +68,7 @@ impl<'a, X, P> Iterator for PlyGenerator<'a, X, P> where
                 self.plies = self.state.extrapolate();
 
                 {
-                    let history = self.history.borrow();
+                    let history = self.history.lock().unwrap();
 
                     history.sort_plies(&mut self.plies);
                 }

@@ -19,7 +19,7 @@
 
 use std::cell::RefCell;
 use std::marker::PhantomData;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
 use std::time::Instant;
 use std::u8;
@@ -73,8 +73,9 @@ pub struct PvSearch<E, S, P, R> where
     depth: u8,
     goal: u16,
     branching_factor: f32,
-    history: Rc<RefCell<History>>,
+    history: Arc<Mutex<History>>,
     transposition_table: TranspositionTable<E, S, P, R>,
+    interrupted: bool,
 }
 
 impl<E, S, P, R> PvSearch<E, S, P, R> where
@@ -89,8 +90,9 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
             depth: 0,
             goal: 0,
             branching_factor: 0.0,
-            history: Rc::new(RefCell::new(History::new())),
+            history: Arc::new(Mutex::new(History::new())),
             transposition_table: TranspositionTable::new(),
+            interrupted: false,
         }
     }
 
@@ -239,7 +241,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
 
                 if alpha >= beta {
                     {
-                        let mut history = self.history.borrow_mut();
+                        let mut history = self.history.lock().unwrap();
                         let entry = history.entry(&ply).or_insert(0);
                         *entry += 1 << depth;
                     }
@@ -249,10 +251,8 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
 
             first_iteration = false;
 
-            if let Some(interrupt) = interrupt {
-                if let Ok(_) = interrupt.try_recv() {
-                    return E::null();
-                }
+            if self.is_interrupted(&interrupt) {
+                return alpha;
             }
         }
 
@@ -282,6 +282,19 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
 
         alpha
     }
+
+    fn is_interrupted(&mut self, interrupt: &Option<&Receiver<()>>) -> bool {
+        if self.interrupted {
+            return true;
+        } else if let Some(interrupt) = *interrupt {
+            if let Ok(_) = interrupt.try_recv() {
+                self.interrupted = true;
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
@@ -302,7 +315,8 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
 
         let start_move = Instant::now();
 
-        self.history.borrow_mut().clear();
+        self.history.lock().unwrap().clear();
+        self.interrupted = false;
 
         let precalculated = match self.transposition_table.get(state) {
             Some(entry) => {
@@ -340,7 +354,7 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
         for depth in 1..max_depth + 1 - precalculated {
             let search_depth = depth + precalculated;
 
-            let states_preallocated = vec![RefCell::new(state.clone()); depth as usize];
+            let states_preallocated = vec![RefCell::new(state.clone()); search_depth as usize];
             statistics.push(vec![Statistics::new(); search_depth as usize]);
 
             let start_search = Instant::now();
@@ -356,11 +370,15 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
             );
 
             let elapsed_search = start_search.elapsed();
-            let elapsed_search = elapsed_search.as_secs() as f32 + elapsed_search.subsec_nanos() as f32 / 1000_000_000.0;
+            let elapsed_search = elapsed_search.as_secs() as f32 + elapsed_search.subsec_nanos() as f32 / 1_000_000_000.0;
             let elapsed_move = start_move.elapsed();
-            let elapsed_move = elapsed_move.as_secs() as f32 + elapsed_move.subsec_nanos() as f32 / 1000_000_000.0;
+            let elapsed_move = elapsed_move.as_secs() as f32 + elapsed_move.subsec_nanos() as f32 / 1_000_000_000.0;
 
             statistics[search_depth as usize - 1][0].time = elapsed_search;
+
+            if self.is_interrupted(&interrupt.as_ref()) {
+                break;
+            }
 
             if let Ok(eval_state) = state.execute_plies(&principal_variation) {
                 if eval_state.check_resolution().is_some() {

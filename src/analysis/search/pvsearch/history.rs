@@ -142,7 +142,7 @@ mod test_tak {
         let state = State::new(5);
         search.search(&state, None);
 
-        let mut history = search.history.borrow_mut();
+        let mut history = search.history.lock().unwrap();
         let ply = Ply::from_ptn("a1", Color::Black).unwrap();
 
         b.iter(|| {
