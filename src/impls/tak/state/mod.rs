@@ -21,7 +21,8 @@ use std::fmt::{self, Write};
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use impls::tak::{Color, Piece};
+use impls::tak::{Color, Piece, Ply};
+use state::State as StateTrait;
 
 use self::metadata::Metadata;
 
@@ -71,6 +72,11 @@ impl State {
             ply_count: 0,
             metadata: Metadata::new(board_size),
         }
+    }
+
+    /// Creates a state from the given board size and executes the given plies.
+    pub fn from_plies(size: usize, plies: &[Ply]) -> Result<State, String> {
+        State::new(size).execute_plies(plies)
     }
 
     /// Creates a state from a string in TPS format, i.e. `"[TPS \"x5/x5/x5/x5/x5 1 1\"]"`.
