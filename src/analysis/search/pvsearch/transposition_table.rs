@@ -92,7 +92,7 @@ impl<E, S, P, R> TranspositionTable<E, S, P, R> where
 mod test_tak {
     use test::{self, Bencher};
 
-    use super::*;
+    use super::{Bound, TranspositionTable, TranspositionTableEntry};
     use impls::tak::*;
 
     #[bench]

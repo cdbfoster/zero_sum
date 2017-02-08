@@ -89,7 +89,7 @@ impl<'a, X, P> Iterator for PlyGenerator<'a, X, P> where
 mod test_tak {
     use test::Bencher;
 
-    use super::*;
+    use super::PlyGenerator;
     use analysis::search::{Search, PvSearch};
     use impls::tak::*;
 

@@ -121,7 +121,7 @@ fn apply_permutation<T>(v: &mut [T], p: &[usize]) {
 mod test_tak {
     use test::{self, Bencher};
 
-    use super::*;
+    use super::History;
     use analysis::search::{Search, PvSearch};
     use impls::tak::*;
 
