@@ -120,8 +120,6 @@ impl fmt::Display for StatisticPrinter {
             ).collect::<Vec<_>>()
         };
 
-        try!(write!(f, "PVS Statistics:"));
-
         for (i, max_depth) in data[..data.len() - 1].iter().enumerate() {
             try!(write!(f, "\n  {0:1$}", format!("Max Depth {}:", i + 1), title_width + 2));
             for j in 0..max_depth.len() {
