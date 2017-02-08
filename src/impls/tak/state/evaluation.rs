@@ -88,9 +88,9 @@ impl analysis::Evaluatable<Evaluation> for State {
             Some(Resolution::Road(win_color)) |
             Some(Resolution::Flat(win_color)) => {
                 if win_color == next_color {
-                    return Evaluation::max() - Evaluation(self.ply_count as i32);
+                    return Evaluation::win() - Evaluation(self.ply_count as i32);
                 } else {
-                    return -Evaluation::max() + Evaluation(self.ply_count as i32);
+                    return -Evaluation::win() + Evaluation(self.ply_count as i32);
                 }
             },
             Some(Resolution::Draw) => return Evaluation::null(),
