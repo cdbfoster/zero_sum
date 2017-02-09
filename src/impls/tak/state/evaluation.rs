@@ -310,55 +310,40 @@ fn evaluate_influence(
     own_flatstones: Bitmap,
     enemy_pieces: Bitmap,
 ) -> i32 {
-    fn add_bitmap(mut bitmap: Bitmap, accumulator: &mut Vec<Bitmap>) {
-        let mut bit = 0;
+    fn add_bitmap(accumulator: &mut Vec<Bitmap>, mut bitmap: Bitmap) {
         if accumulator.is_empty() {
-            accumulator.push(0);
+            accumulator.push(bitmap);
+            return;
         }
 
-        while bitmap != 0 {
-            let carry = accumulator[bit] & bitmap;
-            accumulator[bit] ^= bitmap;
-            bitmap = carry;
-            bit += 1;
-            if accumulator.len() <= bit {
-                accumulator.push(0);
-            }
-        }
-    }
-
-    fn convert_accumulator(accumulator: &[Bitmap]) -> Vec<Bitmap> {
-        let mut result = vec![0; (1 << accumulator.len()) - 1];
-
-        for (bit, bitmap) in accumulator.iter().enumerate() {
-            let mut bitmap = *bitmap;
-
-            for level in 1..1 << bit {
-                let advance = result[level - 1] & bitmap;
-                bitmap &= !advance;
-                result[level - 1] &= !advance;
-                result[level + (1 << bit) - 1] |= advance;
-            }
-
-            result[(1 << bit) - 1] |= bitmap;
+        let len = accumulator.len();
+        let carry = bitmap & accumulator[len - 1];
+        if carry != 0 {
+            accumulator[len - 1] ^= carry;
+            accumulator.push(carry);
+            bitmap ^= carry;
         }
 
-        result
+        for level in (0..len - 1).rev() {
+            let carry = bitmap & accumulator[level];
+            accumulator[level] ^= carry;
+            accumulator[level + 1] |= carry;
+            bitmap ^= carry;
+        }
+
+        accumulator[0] |= bitmap;
     }
 
     let blocks = m.standing_stones | m.capstones;
     let own_blocks = blocks & own_pieces;
 
-    let stack_levels = {
-        let mut stack_counts = Vec::with_capacity(3);
-        add_bitmap(own_blocks, &mut stack_counts);
-        for level in own_stacks {
-            add_bitmap(*level & own_pieces, &mut stack_counts);
-        }
-        convert_accumulator(&stack_counts)
-    };
+    let mut stack_levels = Vec::new();
+    add_bitmap(&mut stack_levels, own_blocks);
+    for &level in own_stacks {
+        add_bitmap(&mut stack_levels, level & own_pieces);
+    }
 
-    let add_influence = |pieces: Bitmap, cast: usize, influence: &mut Vec<Bitmap>| {
+    let add_influence = |influence: &mut Vec<Bitmap>, pieces: Bitmap, cast: usize| {
         use impls::tak::Direction::*;
 
         let mut cast_map = [pieces; 4];
@@ -368,10 +353,10 @@ fn evaluate_influence(
             cast_map[South as usize] >>= m.board_size;
             cast_map[West as usize] = (cast_map[West as usize] << 1) & !EDGE[m.board_size][East as usize];
 
-            add_bitmap(cast_map[North as usize], influence);
-            add_bitmap(cast_map[East as usize], influence);
-            add_bitmap(cast_map[South as usize], influence);
-            add_bitmap(cast_map[West as usize], influence);
+            add_bitmap(influence, cast_map[North as usize]);
+            add_bitmap(influence, cast_map[East as usize]);
+            add_bitmap(influence, cast_map[South as usize]);
+            add_bitmap(influence, cast_map[West as usize]);
 
             cast_map[North as usize] &= !blocks;
             cast_map[East as usize] &= !blocks;
@@ -380,13 +365,10 @@ fn evaluate_influence(
         }
     };
 
-    let influence = {
-        let mut influence_accumulator = Vec::with_capacity(4);
-        for (cast, level) in stack_levels.iter().enumerate() {
-            add_influence(*level, cast + 1, &mut influence_accumulator);
-        }
-        convert_accumulator(&influence_accumulator)
-    };
+    let mut influence = Vec::new();
+    for (cast, &level) in stack_levels.iter().enumerate() {
+        add_influence(&mut influence, level, cast + 1);
+    }
 
     {
         let mut eval = 0;
