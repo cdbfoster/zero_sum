@@ -20,13 +20,11 @@
 use std::collections::HashMap;
 use std::collections::hash_map::IterMut;
 use std::hash::BuildHasherDefault;
-use std::marker::PhantomData;
 
 use fnv::FnvHasher;
 
 use analysis::Evaluation;
 use ply::Ply;
-use resolution::Resolution;
 use state::State;
 
 #[derive(PartialEq)]
@@ -36,9 +34,9 @@ pub enum Bound {
     Upper,
 }
 
-pub struct TranspositionTableEntry<E, P> where
-    E: Evaluation,
-    P: Ply {
+pub struct TranspositionTableEntry<P, E> where
+    P: Ply,
+    E: Evaluation {
     pub depth: u8,
     pub value: E,
     pub bound: Bound,
@@ -46,24 +44,18 @@ pub struct TranspositionTableEntry<E, P> where
     pub lifetime: u8,
 }
 
-pub struct TranspositionTable<E, S, P, R> where
-    E: Evaluation,
-    S: State<P, R>,
-    P: Ply,
-    R: Resolution {
-    map: HashMap<S, TranspositionTableEntry<E, P>, BuildHasherDefault<FnvHasher>>,
-    _phantom: PhantomData<R>,
+pub struct TranspositionTable<S, E> where
+    S: State,
+    E: Evaluation {
+    map: HashMap<S, TranspositionTableEntry<<S as State>::Ply, E>, BuildHasherDefault<FnvHasher>>,
 }
 
-impl<E, S, P, R> TranspositionTable<E, S, P, R> where
-    E: Evaluation,
-    S: State<P, R>,
-    P: Ply,
-    R: Resolution {
-    pub fn new() -> TranspositionTable<E, S, P, R> {
+impl<S, E> TranspositionTable<S, E> where
+    S: State,
+    E: Evaluation {
+    pub fn new() -> TranspositionTable<S, E> {
         TranspositionTable {
             map: HashMap::default(),
-            _phantom: PhantomData,
         }
     }
 
@@ -71,19 +63,19 @@ impl<E, S, P, R> TranspositionTable<E, S, P, R> where
         self.map.len()
     }
 
-    pub fn get(&self, state: &S) -> Option<&TranspositionTableEntry<E, P>> {
+    pub fn get(&self, state: &S) -> Option<&TranspositionTableEntry<<S as State>::Ply, E>> {
         self.map.get(state)
     }
 
-    pub fn insert(&mut self, state: S, entry: TranspositionTableEntry<E, P>) -> Option<TranspositionTableEntry<E, P>> {
+    pub fn insert(&mut self, state: S, entry: TranspositionTableEntry<<S as State>::Ply, E>) -> Option<TranspositionTableEntry<<S as State>::Ply, E>> {
         self.map.insert(state, entry)
     }
 
-    pub fn remove(&mut self, state: &S) -> Option<TranspositionTableEntry<E, P>> {
+    pub fn remove(&mut self, state: &S) -> Option<TranspositionTableEntry<<S as State>::Ply, E>> {
         self.map.remove(state)
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<S, TranspositionTableEntry<E, P>> {
+    pub fn iter_mut(&mut self) -> IterMut<S, TranspositionTableEntry<<S as State>::Ply, E>> {
         self.map.iter_mut()
     }
 }

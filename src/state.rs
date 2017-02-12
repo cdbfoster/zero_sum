@@ -79,20 +79,21 @@ use resolution::Resolution;
 /// # impl std::fmt::Display for Board { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
 /// # fn main() { }
 /// ```
-pub trait State<P, R>: Clone + Display + Eq + Hash + PartialEq where
-    P: Ply,
-    R: Resolution {
+pub trait State: Clone + Display + Eq + Hash + PartialEq {
+    type Ply: Ply;
+    type Resolution: Resolution;
+
     /// Executes a ply on the state, storing the resultant state in the preallocated `next`.
     /// It is recommended to implement `Clone` on the `State` implementor manually,
     /// to take advantage of `Clone`'s `clone_from` method in order to avoid costly
     /// allocations during a speed-critical search.
-    fn execute_ply_preallocated(&self, ply: &P, next: &mut Self)-> Result<(), String>;
+    fn execute_ply_preallocated(&self, ply: &Self::Ply, next: &mut Self)-> Result<(), String>;
 
     /// Returns `None` if the game has not reached a conclusion.
-    fn check_resolution(&self) -> Option<R>;
+    fn check_resolution(&self) -> Option<Self::Resolution>;
 
     /// Clones the state and then calls `execute_ply_preallocated`.
-    fn execute_ply(&self, ply: &P) -> Result<Self, String> {
+    fn execute_ply(&self, ply: &Self::Ply) -> Result<Self, String> {
         let mut next = self.clone();
         match self.execute_ply_preallocated(ply, &mut next) {
             Ok(_) => Ok(next),
@@ -101,7 +102,7 @@ pub trait State<P, R>: Clone + Display + Eq + Hash + PartialEq where
     }
 
     /// Executes each ply in `plies` on the result of the previous ply.
-    fn execute_plies(&self, plies: &[P]) -> Result<Self, String> {
+    fn execute_plies(&self, plies: &[Self::Ply]) -> Result<Self, String> {
         let mut state = self.clone();
         for ply in plies {
             match state.execute_ply(ply) {

@@ -18,7 +18,6 @@
 //
 
 use std::cell::RefCell;
-use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
 use std::time::Instant;
@@ -26,8 +25,6 @@ use std::u8;
 
 use analysis::{Evaluatable, Evaluation, Extrapolatable};
 use analysis::search::{Analysis, Search};
-use ply::Ply;
-use resolution::Resolution;
 use state::State;
 
 use self::history::History;
@@ -65,27 +62,23 @@ use self::transposition_table::{Bound, TranspositionTable, TranspositionTableEnt
 /// let analysis = search.search(&state, Some(interrupt_receiver));
 /// # }
 /// ```
-pub struct PvSearch<E, S, P, R> where
-    E: Evaluation,
-    S: State<P, R> + Evaluatable<E> + Extrapolatable<P>,
-    P: Ply,
-    R: Resolution {
+pub struct PvSearch<S, E> where
+    S: State + Evaluatable<E> + Extrapolatable<<S as State>::Ply>,
+    E: Evaluation {
     depth: u8,
     goal: u16,
     branching_factor: f32,
     history: Arc<Mutex<History>>,
-    transposition_table: TranspositionTable<E, S, P, R>,
+    transposition_table: TranspositionTable<S, E>,
     interrupted: bool,
 }
 
-impl<E, S, P, R> PvSearch<E, S, P, R> where
-    E: Evaluation,
-    S: State<P, R> + Evaluatable<E> + Extrapolatable<P>,
-    P: Ply,
-    R: Resolution {
+impl<S, E> PvSearch<S, E> where
+    S: State + Evaluatable<E> + Extrapolatable<<S as State>::Ply>,
+    E: Evaluation {
     /// Creates a `PvSearch` without a target depth or time goal.  It will search until
     /// it finds a favorable resolution, or until the search is interrupted.
-    pub fn new() -> PvSearch<E, S, P, R> {
+    pub fn new() -> PvSearch<S, E> {
         PvSearch {
             depth: 0,
             goal: 0,
@@ -97,7 +90,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
     }
 
     /// Creates a `PvSearch` that will search to a maximum depth of `depth`.
-    pub fn with_depth(depth: u8) -> PvSearch<E, S, P, R> {
+    pub fn with_depth(depth: u8) -> PvSearch<S, E> {
         let mut search = PvSearch::new();
         search.depth = depth;
         search
@@ -106,7 +99,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
     /// Creates a `PvSearch` that will search until it predicts that it will exceed
     /// `goal` seconds with the next depth.  `branching_factor` is used to predict
     /// the required time to search at the next depth.
-    pub fn with_goal(goal: u16, branching_factor: f32) -> PvSearch<E, S, P, R> {
+    pub fn with_goal(goal: u16, branching_factor: f32) -> PvSearch<S, E> {
         let mut search = PvSearch::new();
         search.goal = goal;
         search.branching_factor = if branching_factor <= 0.0 || branching_factor.is_nan() || branching_factor.is_infinite() {
@@ -120,7 +113,7 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
     fn minimax(
         &mut self,
         state: &S,
-        principal_variation: &mut Vec<P>,
+        principal_variation: &mut Vec<<S as State>::Ply>,
         depth: u8,
         max_depth: u8,
         mut alpha: E,
@@ -299,12 +292,10 @@ impl<E, S, P, R> PvSearch<E, S, P, R> where
     }
 }
 
-impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
-    E: Evaluation,
-    S: State<P, R> + Evaluatable<E> + Extrapolatable<P>,
-    P: Ply,
-    R: Resolution {
-    fn search<'a>(&mut self, state: &'a S, interrupt: Option<Receiver<()>>) -> Analysis<'a, E, S, P, R> {
+impl<S, E> Search<S, E> for PvSearch<S, E> where
+    S: State + Evaluatable<E> + Extrapolatable<<S as State>::Ply>,
+    E: Evaluation {
+    fn search<'a>(&mut self, state: &'a S, interrupt: Option<Receiver<()>>) -> Analysis<'a, S, E> {
         let mut eval = E::null();
         let mut principal_variation = Vec::new();
         let mut statistics = Vec::new();
@@ -398,7 +389,6 @@ impl<E, S, P, R> Search<E, S, P, R> for PvSearch<E, S, P, R> where
             evaluation: eval,
             principal_variation: principal_variation,
             stats: Some(Box::new(StatisticPrinter(statistics))),
-            _phantom: PhantomData,
         }
     }
 }

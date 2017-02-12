@@ -20,8 +20,6 @@
 use std::fmt::Display;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-use ply::Ply;
-use resolution::Resolution;
 use state::State;
 
 /// An evaluation type.
@@ -92,7 +90,7 @@ pub trait Evaluatable<E> where
     ///
     /// # Panics
     /// Will panic if the execution of any ply in `plies` causes an error.
-    fn evaluate_plies<P, R>(&self, plies: &[P]) -> E where P: Ply, R: Resolution, Self: State<P, R> {
+    fn evaluate_plies(&self, plies: &[Self::Ply]) -> E where Self: State {
         match self.execute_plies(plies) {
             Ok(state) => if plies.len() % 2 == 0 {
                 state.evaluate()

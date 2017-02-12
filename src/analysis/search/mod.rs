@@ -20,46 +20,36 @@
 //! Tools for searching the game tree.
 
 use std::fmt;
-use std::marker::PhantomData;
 use std::sync::mpsc::Receiver;
 
 use analysis::{Evaluatable, Evaluation, Extrapolatable};
-use ply::Ply;
-use resolution::Resolution;
 use state::State;
 
 /// The result of a search.
-pub struct Analysis<'a, E, S, P, R> where
-    E: Evaluation,
-    S: 'a + State<P, R> + Evaluatable<E> + Extrapolatable<P>,
-    P: Ply,
-    R: Resolution {
+pub struct Analysis<'a, S, E> where
+    S: 'a + State + Evaluatable<E> + Extrapolatable<<S as State>::Ply>,
+    E: Evaluation {
     /// A reference to the state on which the search was performed.
     pub state: &'a S,
     /// The evaluation of the state after applying the principal variation.
     pub evaluation: E,
     /// The principal variation of the state.
-    pub principal_variation: Vec<P>,
+    pub principal_variation: Vec<<S as State>::Ply>,
     /// Optional statistics from the search may be available for printing.
     pub stats: Option<Box<fmt::Display>>,
-    _phantom: PhantomData<R>,
 }
 
 /// Provides search capabilities
-pub trait Search<E, S, P, R> where
-    E: Evaluation,
-    S: State<P, R> + Evaluatable<E> + Extrapolatable<P>,
-    P: Ply,
-    R: Resolution {
+pub trait Search<S, E> where
+    S: State + Evaluatable<E> + Extrapolatable<<S as State>::Ply>,
+    E: Evaluation {
     /// Generates an analysis of `state`.  `interrupt` is optionally provided to interrupt long searches.
-    fn search<'a>(&mut self, state: &'a S, interrupt: Option<Receiver<()>>) -> Analysis<'a, E, S, P, R>;
+    fn search<'a>(&mut self, state: &'a S, interrupt: Option<Receiver<()>>) -> Analysis<'a, S, E>;
 }
 
-impl<'a, E, S, P, R> fmt::Display for Analysis<'a, E, S, P, R> where
-    E: Evaluation,
-    S: 'a + State<P, R> + Evaluatable<E> + Extrapolatable<P>,
-    P: Ply,
-    R: Resolution {
+impl<'a, S, E> fmt::Display for Analysis<'a, S, E> where
+    S: 'a + State + Evaluatable<E> + Extrapolatable<<S as State>::Ply>,
+    E: Evaluation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "State: {}\n", self.state));
         if let Ok(result) = self.state.execute_plies(&self.principal_variation) {

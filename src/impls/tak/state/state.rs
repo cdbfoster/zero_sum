@@ -24,7 +24,10 @@ use impls::tak::state::State;
 use impls::tak::state::metadata::{Bitmap, BOARD, EDGE};
 use state;
 
-impl state::State<Ply, Resolution> for State {
+impl state::State for State {
+    type Ply = Ply;
+    type Resolution = Resolution;
+
     fn execute_ply_preallocated(&self, ply: &Ply, next: &mut State) -> Result<(), String> {
         next.clone_from(self);
         next.ply_count += 1;
