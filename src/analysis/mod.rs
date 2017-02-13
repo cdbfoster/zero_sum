@@ -21,9 +21,9 @@
 
 pub mod search;
 
-pub use self::evaluation::{Evaluation, Evaluator};
-pub use self::extrapolation::Extrapolatable;
+pub use self::evaluator::{Evaluation, Evaluator};
+pub use self::extrapolatable::Extrapolatable;
 
 #[macro_use]
-mod evaluation;
-mod extrapolation;
+mod evaluator;
+mod extrapolatable;

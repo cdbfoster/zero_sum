@@ -279,7 +279,7 @@ impl<S, E> PvSearch<S, E> where
             ) {
                 self.transposition_table.insert(state.clone(),
                     TranspositionTableEntry {
-                        depth: depth, // XXX Are we cutting the depth short from previous searches?
+                        depth: depth,
                         value: alpha,
                         bound: if !raised_alpha {
                             Bound::Upper

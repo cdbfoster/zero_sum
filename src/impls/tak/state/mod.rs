@@ -342,7 +342,7 @@ impl fmt::Display for State {
     }
 }
 
-pub mod evaluation;
+pub mod evaluator;
 
 mod extrapolation;
 mod metadata;

@@ -75,7 +75,7 @@ impl Direction {
 
 pub use self::ply::Ply;
 pub use self::resolution::Resolution;
-pub use self::state::{State, evaluation as evaluator};
+pub use self::state::{State, evaluator};
 
 mod ply;
 mod resolution;
