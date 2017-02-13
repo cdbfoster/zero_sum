@@ -20,19 +20,26 @@
 use std::cmp;
 use std::fmt;
 
+/// Represents statistics for the search at a single depth.
 #[derive(Clone, Copy, Debug)]
-pub struct Statistics {
+pub struct StatisticsLevel {
+    /// The number of nodes visited on this level.
     pub visited: u32,
+    /// The number of nodes evaluated on this level.
     pub evaluated: u32,
+    /// The number of usable transposition table hits.
     pub tt_saves: u32,
+    /// The number of states we visited that were already in the transposition table.
     pub tt_hits: u32,
+    /// The number of states we put into the transposition table.
     pub tt_stores: u32,
+    /// The amount of time we spent searching this depth.
     pub time: f32,
 }
 
-impl Statistics {
-    pub fn new() -> Statistics {
-        Statistics {
+impl StatisticsLevel {
+    pub fn new() -> StatisticsLevel {
+        StatisticsLevel {
             visited: 0,
             evaluated: 0,
             tt_saves: 0,
@@ -43,9 +50,45 @@ impl Statistics {
     }
 }
 
-pub struct StatisticPrinter(pub Vec<Vec<Statistics>>);
+/// Full statistics for this search.
+pub struct Statistics {
+    /// Statistics for each depth of the search.
+    pub depth: Vec<Vec<StatisticsLevel>>,
+}
 
-impl fmt::Display for StatisticPrinter {
+impl Statistics {
+    /// Calculate the totals for each iteration of the search's iterative deepening.
+    pub fn calculate_depth_totals(&self) -> Vec<StatisticsLevel> {
+        let mut totals = vec![StatisticsLevel::new(); self.depth.len()];
+        for (i, max_depth) in self.depth.iter().enumerate() {
+            for depth in max_depth {
+                totals[i].visited += depth.visited;
+                totals[i].evaluated += depth.evaluated;
+                totals[i].tt_saves += depth.tt_saves;
+                totals[i].tt_hits += depth.tt_hits;
+                totals[i].tt_stores += depth.tt_stores;
+                totals[i].time += depth.time;
+            }
+        }
+        totals
+    }
+
+    /// Calculate the totals for all search iterations.
+    pub fn calculate_totals(&self) -> StatisticsLevel {
+        let mut final_totals = StatisticsLevel::new();
+        for total in &self.calculate_depth_totals() {
+            final_totals.visited += total.visited;
+            final_totals.evaluated += total.evaluated;
+            final_totals.tt_saves += total.tt_saves;
+            final_totals.tt_hits += total.tt_hits;
+            final_totals.tt_stores += total.tt_stores;
+            final_totals.time += total.time;
+        }
+        final_totals
+    }
+}
+
+impl fmt::Display for Statistics {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let titles = [
             "Visited:",
@@ -58,9 +101,9 @@ impl fmt::Display for StatisticPrinter {
 
         let title_width = titles.iter().map(|title| title.len()).max().unwrap() + 1;
 
-        let mut data = vec![vec![vec![String::new(); titles.len()]; self.0.len()]; self.0.len() + 1];
+        let mut data = vec![vec![vec![String::new(); titles.len()]; self.depth.len()]; self.depth.len() + 1];
 
-        for (i, depth) in self.0.iter().enumerate() {
+        for (i, depth) in self.depth.iter().enumerate() {
             for j in 0..i + 1 {
                 data[i][j][0] = format!("{}", depth[j].visited);
                 data[i][j][1] = format!("{}", depth[j].evaluated);
@@ -75,22 +118,7 @@ impl fmt::Display for StatisticPrinter {
             }
         }
 
-        let totals = {
-            let mut totals = vec![Statistics::new(); self.0.len()];
-
-            for (i, max_depth) in self.0.iter().enumerate() {
-                for depth in max_depth {
-                    totals[i].visited += depth.visited;
-                    totals[i].evaluated += depth.evaluated;
-                    totals[i].tt_saves += depth.tt_saves;
-                    totals[i].tt_hits += depth.tt_hits;
-                    totals[i].tt_stores += depth.tt_stores;
-                    totals[i].time += depth.time;
-                }
-            }
-
-            totals
-        };
+        let totals = self.calculate_depth_totals();
 
         {
             let i = data.len() - 1;
@@ -135,15 +163,7 @@ impl fmt::Display for StatisticPrinter {
         }
 
         let final_totals = {
-            let mut final_totals = Statistics::new();
-            for total in &totals {
-                final_totals.visited += total.visited;
-                final_totals.evaluated += total.evaluated;
-                final_totals.tt_saves += total.tt_saves;
-                final_totals.tt_hits += total.tt_hits;
-                final_totals.tt_stores += total.tt_stores;
-                final_totals.time += total.time;
-            }
+            let final_totals = self.calculate_totals();
 
             vec![
                 format!("{}", final_totals.visited),

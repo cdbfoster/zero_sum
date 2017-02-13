@@ -17,20 +17,36 @@
 // Copyright 2016-2017 Chris Foster
 //
 
+//! Principal Variation Search
+
 use std::cell::RefCell;
+use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
 use std::time::Instant;
 use std::u8;
 
 use analysis::{Evaluation, Evaluator, Extrapolatable};
-use analysis::search::{Analysis, Search};
+use analysis::search::Search;
 use state::State;
 
 use self::history::History;
 use self::ply_generator::PlyGenerator;
-use self::statistics::{StatisticPrinter, Statistics};
 use self::transposition_table::{Bound, TranspositionTable, TranspositionTableEntry};
+
+/// The results of the search.
+pub struct Analysis<S, E> where
+    S: State + Extrapolatable<<S as State>::Ply>,
+    E: Evaluator<State = S> {
+    /// The state on which the search was performed.
+    pub state: S,
+    /// The evaluation of the state after applying the principal variation.
+    pub evaluation: <E as Evaluator>::Evaluation,
+    /// The principal variation of the state.
+    pub principal_variation: Vec<<S as State>::Ply>,
+    /// Statistics from the search.
+    pub statistics: Statistics,
+}
 
 /// A PVS implementation of `Search` with a few common optimizations.
 ///
@@ -38,7 +54,8 @@ use self::transposition_table::{Bound, TranspositionTable, TranspositionTableEnt
 ///
 /// ```rust
 /// # #[macro_use] extern crate zero_sum;
-/// # use zero_sum::analysis::search::{Search, PvSearch};
+/// # use zero_sum::analysis::search::Search;
+/// # use zero_sum::analysis::search::pvsearch::PvSearch;
 /// # use std::ops::{Add, Div, Mul, Neg, Sub};
 /// # #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)] struct Eval(i8);
 /// # prepare_evaluation_tuple!(Eval);
@@ -123,7 +140,7 @@ impl<S, E> PvSearch<S, E> where
         mut alpha: <E as Evaluator>::Evaluation,
         beta: <E as Evaluator>::Evaluation,
         states_preallocated: &[RefCell<S>],
-        stats: &mut [Statistics],
+        stats: &mut [StatisticsLevel],
         interrupt: Option<&Receiver<()>>,
     ) -> <E as Evaluator>::Evaluation {
         let search_iteration = (max_depth - depth) as usize;
@@ -299,7 +316,9 @@ impl<S, E> PvSearch<S, E> where
 impl<S, E> Search<S, E> for PvSearch<S, E> where
     S: State + Extrapolatable<<S as State>::Ply>,
     E: Evaluator<State = S> {
-    fn search<'a>(&mut self, state: &'a S, interrupt: Option<Receiver<()>>) -> Analysis<'a, S, E> {
+    type Analysis = Analysis<S, E>;
+
+    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Analysis<S, E> {
         let mut eval = <E as Evaluator>::Evaluation::null();
         let mut principal_variation = Vec::new();
         let mut statistics = Vec::new();
@@ -328,7 +347,7 @@ impl<S, E> Search<S, E> for PvSearch<S, E> where
         };
 
         for depth in 1..precalculated + 1 {
-            statistics.push(vec![Statistics::new(); depth as usize]);
+            statistics.push(vec![StatisticsLevel::new(); depth as usize]);
         }
 
         // Purge transposition table
@@ -352,7 +371,7 @@ impl<S, E> Search<S, E> for PvSearch<S, E> where
             let search_depth = depth + precalculated;
 
             let states_preallocated = vec![RefCell::new(state.clone()); search_depth as usize];
-            statistics.push(vec![Statistics::new(); search_depth as usize]);
+            statistics.push(vec![StatisticsLevel::new(); search_depth as usize]);
 
             let start_search = Instant::now();
 
@@ -389,13 +408,44 @@ impl<S, E> Search<S, E> for PvSearch<S, E> where
         }
 
         Analysis {
-            state: state,
+            state: state.clone(),
             evaluation: eval,
             principal_variation: principal_variation,
-            stats: Some(Box::new(StatisticPrinter(statistics))),
+            statistics: Statistics {
+                depth: statistics,
+            },
         }
     }
 }
+
+impl<S, E> fmt::Display for Analysis<S, E> where
+    S: State + Extrapolatable<<S as State>::Ply>,
+    E: Evaluator<State = S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(write!(f, "State: {}\n", self.state));
+        if let Ok(result) = self.state.execute_plies(&self.principal_variation) {
+            try!(write!(f, "Resultant State: {}\n", result));
+            // XXX Make Resolution require Display and print the resolution if any
+        }
+        try!(write!(f, "Evaluation: {}{}", self.evaluation, if self.evaluation.is_end() {
+            if self.evaluation.is_win() {
+                " (Win)\n"
+            } else {
+                " (Lose)\n"
+            }
+        } else {
+            "\n"
+        }));
+        try!(write!(f, "Principal Variation:"));
+        for ply in &self.principal_variation {
+            try!(write!(f, "\n  {}", ply));
+        }
+        try!(write!(f, "\nStatistics:\n{}", self.statistics));
+        Ok(())
+    }
+}
+
+pub use self::statistics::{Statistics, StatisticsLevel};
 
 mod history;
 mod ply_generator;

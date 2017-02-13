@@ -122,7 +122,8 @@ mod test_tak {
     use test::{self, Bencher};
 
     use super::History;
-    use analysis::search::{Search, PvSearch};
+    use analysis::search::Search;
+    use analysis::search::pvsearch::PvSearch;
     use impls::tak::*;
 
     #[bench]

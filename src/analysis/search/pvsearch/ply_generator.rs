@@ -90,7 +90,8 @@ mod test_tak {
     use test::Bencher;
 
     use super::PlyGenerator;
-    use analysis::search::{Search, PvSearch};
+    use analysis::search::Search;
+    use analysis::search::pvsearch::PvSearch;
     use impls::tak::*;
 
     #[bench]
