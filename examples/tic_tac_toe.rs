@@ -31,7 +31,7 @@ fn main() {
     loop {
         let mut board = Board::new();
         let evaluator = Evaluator;
-        let mut ai = zero_sum::analysis::search::PvSearch::<Board, Evaluator>::new(evaluator);
+        let mut ai = zero_sum::analysis::search::PvSearch::new(evaluator);
 
         println!("--------------------");
 
