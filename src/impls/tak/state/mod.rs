@@ -342,9 +342,8 @@ impl fmt::Display for State {
     }
 }
 
-pub use self::evaluation::Evaluation;
+pub mod evaluation;
 
-mod evaluation;
 mod extrapolation;
 mod metadata;
 mod state;

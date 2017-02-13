@@ -23,7 +23,7 @@ use analysis::{self, Evaluation as EvaluationTrait};
 use impls::tic_tac_toe::{Board, Mark, Ply, Resolution};
 use ply;
 use resolution;
-use state::{self, State as StateTrait};
+use state::{self, State};
 
 impl ply::Ply for Ply { }
 
@@ -37,7 +37,10 @@ impl resolution::Resolution for Resolution {
     }
 }
 
-impl state::State<Ply, Resolution> for Board {
+impl state::State for Board {
+    type Ply = Ply;
+    type Resolution = Resolution;
+
     fn execute_ply_preallocated(&self, ply: &Ply, next: &mut Board) -> Result<(), String> {
         if ply.coordinates.0 >= 3 || ply.coordinates.1 >= 3 {
             return Err(String::from("Coordinates out of bounds"));
@@ -112,22 +115,27 @@ impl analysis::Evaluation for Evaluation {
     fn is_win(&self) -> bool { self.0.abs() >= 5 }
 }
 
-impl analysis::Evaluatable<Evaluation> for Board {
-    fn evaluate(&self) -> Evaluation {
-        let next_mark = self.next_mark();
+pub struct Evaluator;
 
-        if let Some(Resolution::Win(mark)) = self.check_resolution() {
+impl analysis::Evaluator for Evaluator {
+    type State = Board;
+    type Evaluation = Evaluation;
+
+    fn evaluate(&self, state: &Board) -> Evaluation {
+        let next_mark = state.next_mark();
+
+        if let Some(Resolution::Win(mark)) = state.check_resolution() {
             if mark == next_mark {
-                Evaluation(Evaluation::win().0 - self.1 as i8)
+                Evaluation(Evaluation::win().0 - state.1 as i8)
             } else {
-                -Evaluation(Evaluation::win().0 - self.1 as i8)
+                -Evaluation(Evaluation::win().0 - state.1 as i8)
             }
         } else {
             // Weight the corners.
             // This doesn't matter at all with regards to perfect play,
             // but there are more ways a human can mess up if we start in the corner.
-            let x_corners = (0..9).filter(|&x| x % 2 == 0 && x != 4 && self.0[x] == Some(Mark::X)).count() as i8;
-            let o_corners = (0..9).filter(|&x| x % 2 == 0 && x != 4 && self.0[x] == Some(Mark::O)).count() as i8;
+            let x_corners = (0..9).filter(|&x| x % 2 == 0 && x != 4 && state.0[x] == Some(Mark::X)).count() as i8;
+            let o_corners = (0..9).filter(|&x| x % 2 == 0 && x != 4 && state.0[x] == Some(Mark::O)).count() as i8;
 
             if next_mark == Mark::X {
                 Evaluation(x_corners - o_corners)

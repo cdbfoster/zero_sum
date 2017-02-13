@@ -85,7 +85,7 @@ impl Hash for Board {
     }
 }
 
-pub use self::zero_sum::Evaluation;
+pub use self::zero_sum::Evaluator;
 
 mod display;
 mod zero_sum;

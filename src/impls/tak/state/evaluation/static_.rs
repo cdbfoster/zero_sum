@@ -75,22 +75,27 @@ const WEIGHT: Weights = Weights {
     group: [0, 0, 100, 200, 400, 600, 0, 0],
 };
 
-impl analysis::Evaluatable<Evaluation> for State {
-    fn evaluate(&self) -> Evaluation {
-        let next_color = if self.ply_count % 2 == 0 {
+pub struct StaticEvaluator;
+
+impl analysis::Evaluator for StaticEvaluator {
+    type State = State;
+    type Evaluation = Evaluation;
+
+    fn evaluate(&self, state: &State) -> Evaluation {
+        let next_color = if state.ply_count % 2 == 0 {
             Color::White
         } else {
             Color::Black
         };
 
-        match self.check_resolution() {
+        match state.check_resolution() {
             None => (),
             Some(Resolution::Road(win_color)) |
             Some(Resolution::Flat(win_color)) => {
                 if win_color == next_color {
-                    return Evaluation::win() - Evaluation(self.ply_count as i32);
+                    return Evaluation::win() - Evaluation(state.ply_count as i32);
                 } else {
-                    return -Evaluation::win() + Evaluation(self.ply_count as i32);
+                    return -Evaluation::win() + Evaluation(state.ply_count as i32);
                 }
             },
             Some(Resolution::Draw) => return Evaluation::null(),
@@ -99,7 +104,7 @@ impl analysis::Evaluatable<Evaluation> for State {
         let mut p1_eval = 0;
         let mut p2_eval = 0;
 
-        let m = &self.metadata;
+        let m = &state.metadata;
 
         let total_pieces = m.p1_pieces | m.p2_pieces;
 
@@ -115,8 +120,8 @@ impl analysis::Evaluatable<Evaluation> for State {
         let (p1_flatstone_weight, p2_flatstone_weight) = {
             let flatstone_threshold = END_GAME_FLATSTONE_THRESHOLD[m.board_size];
 
-            let p1_position = cmp::min(self.p1_flatstones as i32, flatstone_threshold);
-            let p2_position = cmp::min(self.p2_flatstones as i32, flatstone_threshold);
+            let p1_position = cmp::min(state.p1_flatstones as i32, flatstone_threshold);
+            let p2_position = cmp::min(state.p2_flatstones as i32, flatstone_threshold);
 
             (
                 WEIGHT.flatstone.0 * p1_position / flatstone_threshold +

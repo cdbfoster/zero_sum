@@ -78,24 +78,24 @@ pub trait Evaluation:
     fn is_win(&self) -> bool;
 }
 
-/// Provides evaluation capabilities.
-///
-/// This is usually implemented on a `State`.
-pub trait Evaluatable<E> where
-    E: Evaluation {
-    /// Returns the evaluation of the current state.
-    fn evaluate(&self) -> E;
+/// Evaluates a State.
+pub trait Evaluator {
+    type State: State;
+    type Evaluation: Evaluation;
 
-    /// Returns the evaluation of the state after executing `plies`.
+    /// Returns the evaluation of `state`.
+    fn evaluate(&self, state: &Self::State) -> Self::Evaluation;
+
+    /// Returns the evaluation of `state` after executing `plies`.
     ///
     /// # Panics
     /// Will panic if the execution of any ply in `plies` causes an error.
-    fn evaluate_plies(&self, plies: &[Self::Ply]) -> E where Self: State {
-        match self.execute_plies(plies) {
-            Ok(state) => if plies.len() % 2 == 0 {
-                state.evaluate()
+    fn evaluate_plies(&self, state: &Self::State, plies: &[<Self::State as State>::Ply]) -> Self::Evaluation {
+        match state.execute_plies(plies) {
+            Ok(final_state) => if plies.len() % 2 == 0 {
+                self.evaluate(&final_state)
             } else {
-                -state.evaluate()
+                -self.evaluate(&final_state)
             },
             Err(error) => panic!("Error calculating evaluation: {}", error),
         }

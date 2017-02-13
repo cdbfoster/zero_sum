@@ -17,19 +17,6 @@
 // Copyright 2016-2017 Chris Foster
 //
 
-extern crate zero_sum;
+pub use self::static_::StaticEvaluator;
 
-use zero_sum::analysis::search::Search;
-use zero_sum::impls::tak::*;
-
-fn main() {
-    let state = State::new(5);
-    let evaluator = evaluator::StaticEvaluator;
-    let mut search = zero_sum::analysis::search::PvSearch::<State, evaluator::StaticEvaluator>::with_goal(evaluator, 60, 12.0);
-
-    println!("Searching for opening move...");
-
-    let analysis = search.search(&state, None);
-
-    println!("{}", analysis);
-}
+mod static_;
