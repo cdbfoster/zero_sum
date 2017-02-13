@@ -64,7 +64,7 @@ pub struct Analysis<S, E> where
 /// # impl zero_sum::Ply for Ply { }
 /// # impl std::fmt::Display for Ply { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
 /// # struct Resolution(i8);
-/// # impl zero_sum::Resolution for Resolution { fn is_win(&self) -> bool { false } fn is_draw(&self) -> bool { false } }
+/// # impl zero_sum::Resolution for Resolution { fn get_winner(&self) -> Option<u8> { None } fn is_draw(&self) -> bool { false } }
 /// # #[derive(Clone, Eq, Hash, PartialEq)] struct State(i8);
 /// # impl State { fn new() -> State { State(0) } }
 /// # impl zero_sum::State for State { type Ply = Ply; type Resolution = Resolution; fn execute_ply_preallocated(&self, _: &Ply, _: &mut State) -> Result<(), String> { Ok(()) } fn check_resolution(&self) -> Option<Resolution> { None } }

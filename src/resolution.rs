@@ -38,12 +38,19 @@
 /// }
 ///
 /// impl Resolution for End {
-///     fn is_win(&self) -> bool { if let End::Win(_) = *self { true } else { false } }
+///     fn get_winner(&self) -> Option<u8> {
+///         match *self {
+///             End::Win(Mark::X) => Some(0),
+///             End::Win(Mark::O) => Some(1),
+///             _ => None,
+///         }
+///     }
 ///     fn is_draw(&self) -> bool { if *self == End::CatsGame { true } else { false } }
 /// }
 /// # fn main() { }
 /// ```
 pub trait Resolution {
-    fn is_win(&self) -> bool;
+    /// Returns the index of the winning player if this `Resolution` represents a win.
+    fn get_winner(&self) -> Option<u8>;
     fn is_draw(&self) -> bool;
 }

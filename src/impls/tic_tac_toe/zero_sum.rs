@@ -28,8 +28,12 @@ use state::{self, State};
 impl ply::Ply for Ply { }
 
 impl resolution::Resolution for Resolution {
-    fn is_win(&self) -> bool {
-        if let Resolution::Win(_) = *self { true } else { false }
+    fn get_winner(&self) -> Option<u8> {
+        match *self {
+            Resolution::Win(Mark::X) => Some(0),
+            Resolution::Win(Mark::O) => Some(1),
+            _ => None,
+        }
     }
 
     fn is_draw(&self) -> bool {

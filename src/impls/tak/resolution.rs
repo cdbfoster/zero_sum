@@ -33,12 +33,14 @@ pub enum Resolution {
 }
 
 impl resolution::Resolution for Resolution {
-    /// Returns true if the value is either a `Road` or a `Flat`; false otherwise.
-    fn is_win(&self) -> bool {
+    /// Returns the index of the winning player (0 for white, 1 for black) if the value is either a `Road` or a `Flat`; `None` otherwise.
+    fn get_winner(&self) -> Option<u8> {
         match *self {
-            Resolution::Road(_) |
-            Resolution::Flat(_) => true,
-            Resolution::Draw => false,
+            Resolution::Road(Color::White) |
+            Resolution::Flat(Color::White) => Some(0),
+            Resolution::Road(Color::Black) |
+            Resolution::Flat(Color::Black) => Some(1),
+            Resolution::Draw => None,
         }
     }
 

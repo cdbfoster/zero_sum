@@ -77,7 +77,7 @@ use resolution::Resolution;
 ///     }
 /// }
 /// # impl Ply for Move { }
-/// # impl Resolution for End { fn is_win(&self) -> bool { false } fn is_draw(&self) -> bool { false } }
+/// # impl Resolution for End { fn get_winner(&self) -> Option<u8> { None } fn is_draw(&self) -> bool { false } }
 /// # impl std::fmt::Display for Move { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
 /// # impl std::fmt::Display for Board { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
 /// # fn main() { }
