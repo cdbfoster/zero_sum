@@ -84,12 +84,13 @@ impl<S, E> TranspositionTable<S, E> where
 mod test_tak {
     use test::{self, Bencher};
 
-    use super::{Bound, TranspositionTable, TranspositionTableEntry};
+    use analysis::{Evaluation, Evaluator};
     use impls::tak::*;
+    use super::{Bound, TranspositionTable, TranspositionTableEntry};
 
     #[bench]
     fn bench_tt_empty_add(b: &mut Bencher) {
-        let mut transposition_table = TranspositionTable::<Evaluation, State, Ply, Resolution>::new();
+        let mut transposition_table = TranspositionTable::<State, <evaluator::StaticEvaluator as Evaluator>::Evaluation>::new();
         let state = State::from_tps("[TPS \"x2,1,x2/x,1,12,1,x/1,12,121,12,1/x,1,12,1,x/x2,1,x2 1 10\"]").unwrap();
 
         b.iter(|| {
@@ -97,7 +98,7 @@ mod test_tak {
 
             let entry = TranspositionTableEntry {
                 depth: 7,
-                value: Evaluation(0),
+                value: <evaluator::StaticEvaluator as Evaluator>::Evaluation::null(),
                 bound: Bound::Lower,
                 principal_variation: Vec::<Ply>::new(),
                 lifetime: 3,
@@ -115,7 +116,7 @@ mod test_tak {
 
             let _ = TranspositionTableEntry {
                 depth: 7,
-                value: Evaluation(0),
+                value: <evaluator::StaticEvaluator as Evaluator>::Evaluation::null(),
                 bound: Bound::Lower,
                 principal_variation: Vec::<Ply>::new(),
                 lifetime: 3,

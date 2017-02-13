@@ -391,7 +391,7 @@ mod test {
     use std::cmp;
     use test::{self, Bencher};
 
-    use analysis::Evaluatable;
+    use analysis::Evaluator;
     use impls::tak::*;
     use super::{
         END_GAME_FLATSTONE_THRESHOLD,
@@ -410,7 +410,8 @@ mod test {
     #[bench]
     fn bench_evaluate(b: &mut Bencher) {
         b.iter(|| {
-            test::black_box(&STATE).evaluate()
+            let evaluator = evaluator::StaticEvaluator;
+            evaluator.evaluate(test::black_box(&STATE))
         });
     }
 

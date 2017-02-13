@@ -51,7 +51,10 @@ use resolution::Resolution;
 /// # #[derive(Clone, Eq, PartialEq)]
 /// struct Board([Option<Mark>; 9], u8); // The board and the turn number
 ///
-/// impl State<Move, End> for Board {
+/// impl State for Board {
+///     type Ply = Move;
+///     type Resolution = End;
+///
 ///     fn execute_ply_preallocated(&self, ply: &Move, next: &mut Board) -> Result<(), String> {
 ///         // ...
 ///         # Ok(())

@@ -50,15 +50,17 @@ use self::transposition_table::{Bound, TranspositionTable, TranspositionTableEnt
 /// # impl zero_sum::Resolution for Resolution { fn is_win(&self) -> bool { false } fn is_draw(&self) -> bool { false } }
 /// # #[derive(Clone, Eq, Hash, PartialEq)] struct State(i8);
 /// # impl State { fn new() -> State { State(0) } }
-/// # impl zero_sum::State<Ply, Resolution> for State { fn execute_ply_preallocated(&self, _: &Ply, _: &mut State) -> Result<(), String> { Ok(()) } fn check_resolution(&self) -> Option<Resolution> { None } }
-/// # impl zero_sum::analysis::Evaluatable<Eval> for State { fn evaluate(&self) -> Eval { Eval(0) } }
+/// # impl zero_sum::State for State { type Ply = Ply; type Resolution = Resolution; fn execute_ply_preallocated(&self, _: &Ply, _: &mut State) -> Result<(), String> { Ok(()) } fn check_resolution(&self) -> Option<Resolution> { None } }
+/// # struct Evaluator;
+/// # impl zero_sum::analysis::Evaluator for Evaluator { type State = State; type Evaluation = Eval; fn evaluate(&self, _: &State) -> Eval { Eval(0) } }
 /// # impl zero_sum::analysis::Extrapolatable<Ply> for State { fn extrapolate(&self) -> Vec<Ply> { Vec::new() } }
 /// # impl std::fmt::Display for State { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
 /// # fn main() {
 /// let state = State::new();
 /// let (interrupt_sender, interrupt_receiver) = std::sync::mpsc::channel();
 ///
-/// let mut search = PvSearch::<Eval, State, Ply, Resolution>::with_depth(5);
+/// let evaluator = Evaluator;
+/// let mut search = PvSearch::with_depth(evaluator, 5);
 /// let analysis = search.search(&state, Some(interrupt_receiver));
 /// # }
 /// ```

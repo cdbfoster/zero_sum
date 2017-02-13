@@ -138,7 +138,8 @@ mod test_tak {
     #[bench]
     #[ignore]
     fn bench_history_full_add(b: &mut Bencher) {
-        let mut search = PvSearch::<Evaluation, State, Ply, Resolution>::with_depth(5);
+        let evaluator = evaluator::StaticEvaluator;
+        let mut search = PvSearch::with_depth(evaluator, 5);
         let state = State::new(5);
         search.search(&state, None);
 
