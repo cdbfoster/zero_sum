@@ -21,13 +21,12 @@
 
 use std::sync::mpsc::Receiver;
 
-use analysis::{Evaluator, Extrapolatable};
+use analysis::Extrapolatable;
 use state::State;
 
 /// Provides search capabilities.
-pub trait Search<S, E> where
-    S: State + Extrapolatable<<S as State>::Ply>,
-    E: Evaluator<State = S> {
+pub trait Search<S> where
+    S: State + Extrapolatable<<S as State>::Ply> {
     type Analysis;
 
     /// Generates an analysis of `state`.  `interrupt` is optionally provided to interrupt long searches.

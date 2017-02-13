@@ -313,7 +313,7 @@ impl<S, E> PvSearch<S, E> where
     }
 }
 
-impl<S, E> Search<S, E> for PvSearch<S, E> where
+impl<S, E> Search<S> for PvSearch<S, E> where
     S: State + Extrapolatable<<S as State>::Ply>,
     E: Evaluator<State = S> {
     type Analysis = Analysis<S, E>;
