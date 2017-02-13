@@ -48,7 +48,7 @@ use state::State;
 ///     fn epsilon() -> Eval { Eval(1) }
 ///     fn win() -> Eval { Eval(100000) }
 ///     fn max() -> Eval { Eval(i32::MAX) }
-///     fn is_win(&self) -> bool { self.0.abs() > 99000 }
+///     fn is_win(&self) -> bool { self.0 > 99000 }
 /// }
 /// # fn main() { }
 /// ```
@@ -68,14 +68,23 @@ pub trait Evaluation:
     fn null() -> Self;
     /// The smallest step to consider.
     fn epsilon() -> Self;
-    /// The base value of a win.  The evaluation system may add or subtract to it in
+    /// The base value of a win.  The evaluator may add or subtract to it in
     /// in order to promote it or discourage it in favor of others in the search.
     fn win() -> Self;
+    /// The base value of a loss.  The evaluator may add or subtract to it in
+    /// in order to promote it or discourage it in favor of others in the search.
+    fn lose() -> Self { -Self::win() }
     /// The maximum value representable.  This must be safely negatable.
     fn max() -> Self;
+    /// The minimum value representable.
+    fn min() -> Self { -Self::max() }
     /// Returns `true` if this evaluation contains a win.  This is usually a check to
-    /// see if the absolute value is above a certain threshold.
+    /// see if the value is above a certain threshold.
     fn is_win(&self) -> bool;
+    /// Returns `true` if this evaluation contains a loss.
+    fn is_lose(&self) -> bool { (-*self).is_win() }
+    /// Returns `true` if this evaluation is either a win or a loss.
+    fn is_end(&self) -> bool { self.is_win() || self.is_lose() }
 }
 
 /// Evaluates a State.

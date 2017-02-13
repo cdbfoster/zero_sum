@@ -56,8 +56,12 @@ impl<'a, S, E> fmt::Display for Analysis<'a, S, E> where
             try!(write!(f, "Resultant State: {}\n", result));
             // XXX Make Resolution require Display and print the resolution if any
         }
-        try!(write!(f, "Evaluation: {}{}", self.evaluation, if self.evaluation.is_win() {
-            " (Win)\n"
+        try!(write!(f, "Evaluation: {}{}", self.evaluation, if self.evaluation.is_end() {
+            if self.evaluation.is_win() {
+                " (Win)\n"
+            } else {
+                " (Lose)\n"
+            }
         } else {
             "\n"
         }));

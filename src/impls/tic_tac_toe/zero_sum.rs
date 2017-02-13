@@ -109,7 +109,7 @@ impl analysis::Evaluation for Evaluation {
     fn epsilon() -> Evaluation { Evaluation(1) }
     fn win() -> Evaluation { Evaluation(14) }
     fn max() -> Evaluation { Evaluation(i8::MAX) }
-    fn is_win(&self) -> bool { self.0.abs() >= 5 }
+    fn is_win(&self) -> bool { self.0 >= 5 }
 }
 
 /// A very simple evaluator.  Gives extra weight to the corners.

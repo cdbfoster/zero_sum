@@ -37,7 +37,7 @@ impl analysis::Evaluation for Evaluation {
     fn epsilon() -> Evaluation { Evaluation(1) }
     fn win() -> Evaluation { Evaluation(100_000) }
     fn max() -> Evaluation { Evaluation(i32::MAX) }
-    fn is_win(&self) -> bool { self.0.abs() >= 99_000 }
+    fn is_win(&self) -> bool { self.0 >= 99_000 }
 }
 
 const END_GAME_FLATSTONE_THRESHOLD: [i32; 9] = [0, 0, 0, 5, 8, 10, 15, 20, 25];

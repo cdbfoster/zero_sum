@@ -150,7 +150,7 @@ impl<S, E> PvSearch<S, E> where
                 usable = true;
             }
 
-            if entry.bound == Bound::Exact && entry.value.is_win() {
+            if entry.bound == Bound::Exact && entry.value.is_end() {
                 usable = true;
             }
 
@@ -360,7 +360,7 @@ impl<S, E> Search<S, E> for PvSearch<S, E> where
                 state,
                 &mut principal_variation,
                 search_depth, search_depth,
-                -<E as Evaluator>::Evaluation::max(), <E as Evaluator>::Evaluation::max(),
+                <E as Evaluator>::Evaluation::min(), <E as Evaluator>::Evaluation::max(),
                 &states_preallocated,
                 &mut statistics[search_depth as usize - 1],
                 interrupt.as_ref(),
