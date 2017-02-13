@@ -50,7 +50,7 @@
 //!
 //! ```toml
 //! [features]
-//! default = [ "zero_sum/with_tak" ]
+//! default = ["zero_sum/with_tak"]
 //! ```
 //!
 //! for instance, to include the `tak` module.
