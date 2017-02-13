@@ -17,6 +17,8 @@
 // Copyright 2016-2017 Chris Foster
 //
 
+//! Contains evaluators for tak states.
+
 pub use self::static_::StaticEvaluator;
 
 mod static_;

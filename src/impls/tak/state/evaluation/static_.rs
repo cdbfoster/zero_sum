@@ -27,9 +27,6 @@ use impls::tak::state::State;
 use impls::tak::state::metadata::{Bitmap, BitmapInterface, BOARD, EDGE, Metadata};
 use state::State as StateTrait;
 
-/// Represents the evaluation of a state.
-///
-/// A win/loss is represented by a quantity of at least/most +/- 99,000.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Evaluation(pub i32);
 
@@ -75,6 +72,9 @@ const WEIGHT: Weights = Weights {
     group: [0, 0, 100, 200, 400, 600, 0, 0],
 };
 
+/// Provides a static evaluation of a tak state.  This evaluator considers
+/// top-level pieces, stacked flatstones, road-group size, one-away threats,
+/// and stack influence.
 pub struct StaticEvaluator;
 
 impl analysis::Evaluator for StaticEvaluator {

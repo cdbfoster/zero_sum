@@ -60,10 +60,11 @@
 //! The three basic traits are `Ply`, `Resolution`, and `State`.  These form
 //! the basic building blocks of any zero-sum game.
 //!
-//! In order to provide analysis, one must also create an evaluation type
-//! (usually a tuple wrapper around a numeric type, i.e. `struct Eval(i32);`)
-//! with `analysis::Evaluation`, and implement `analysis::Evaluatable` and
-//! `analysis::Extrapolatable` on the `State` type.
+//! In order to provide analysis, one must also create an evaluator type with
+//! `analysis::Evaluator` that has an associated evaluation type that implements
+//! `analysis::Evaluation` (usually a tuple wrapper around a numeric type, i.e.
+//! `struct Eval(i32);`).  Finally, implement `analysis::Extrapolatable` on the
+//! `State` type.
 //!
 //! # Example
 //!

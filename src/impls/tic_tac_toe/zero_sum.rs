@@ -99,9 +99,6 @@ impl analysis::Extrapolatable<Ply> for Board {
     }
 }
 
-/// The evaluation of a board.
-///
-/// A win/loss is represented by at least/most +/- 5.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Evaluation(pub i8);
 
@@ -115,6 +112,7 @@ impl analysis::Evaluation for Evaluation {
     fn is_win(&self) -> bool { self.0.abs() >= 5 }
 }
 
+/// A very simple evaluator.  Gives extra weight to the corners.
 pub struct Evaluator;
 
 impl analysis::Evaluator for Evaluator {
