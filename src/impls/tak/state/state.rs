@@ -28,6 +28,10 @@ impl state::State for State {
     type Ply = Ply;
     type Resolution = Resolution;
 
+    fn get_ply_count(&self) -> usize {
+        self.ply_count as usize
+    }
+
     fn execute_ply_preallocated(&self, ply: &Ply, next: &mut State) -> Result<(), String> {
         next.clone_from(self);
         next.ply_count += 1;

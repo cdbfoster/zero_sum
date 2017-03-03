@@ -55,6 +55,10 @@ use resolution::Resolution;
 ///     type Ply = Move;
 ///     type Resolution = End;
 ///
+///     fn get_ply_count(&self) -> usize {
+///         self.1 as usize
+///     }
+///
 ///     fn execute_ply_preallocated(&self, ply: &Move, next: &mut Board) -> Result<(), String> {
 ///         // ...
 ///         # Ok(())
@@ -85,6 +89,9 @@ use resolution::Resolution;
 pub trait State: Clone + Display + Eq + Hash + PartialEq {
     type Ply: Ply;
     type Resolution: Resolution;
+
+    /// Returns the number of plies that have passed in the game.
+    fn get_ply_count(&self) -> usize;
 
     /// Executes a ply on the state, storing the resultant state in the preallocated `next`.
     /// It is recommended to implement `Clone` on the `State` implementor manually,

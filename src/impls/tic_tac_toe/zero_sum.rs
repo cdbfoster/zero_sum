@@ -45,6 +45,10 @@ impl state::State for Board {
     type Ply = Ply;
     type Resolution = Resolution;
 
+    fn get_ply_count(&self) -> usize {
+        self.1 as usize
+    }
+
     fn execute_ply_preallocated(&self, ply: &Ply, next: &mut Board) -> Result<(), String> {
         if ply.coordinates.0 >= 3 || ply.coordinates.1 >= 3 {
             return Err(String::from("Coordinates out of bounds"));
