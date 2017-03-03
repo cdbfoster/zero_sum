@@ -188,10 +188,7 @@ impl<S, E> PvSearch<S, E> where
 
         let ply_generator = PlyGenerator::new(
             state,
-            match principal_variation.first() {
-                Some(ply) => Some(ply.clone()),
-                None => None,
-            },
+            principal_variation.first().cloned(),
             self.history.clone(),
         );
 
@@ -208,7 +205,7 @@ impl<S, E> PvSearch<S, E> where
             let next_state = {
                 if let Err(_) = state.execute_ply_preallocated(
                     &ply,
-                    &mut *states_preallocated[search_iteration].borrow_mut(),
+                    &mut states_preallocated[search_iteration].borrow_mut(),
                 ) {
                     continue;
                 }
@@ -275,7 +272,7 @@ impl<S, E> PvSearch<S, E> where
         if let Some(ply) = principal_variation.first() {
             if let Ok(_) = state.execute_ply_preallocated(
                 ply,
-                &mut *states_preallocated[search_iteration].borrow_mut(),
+                &mut states_preallocated[search_iteration].borrow_mut(),
             ) {
                 self.transposition_table.insert(state.clone(),
                     TranspositionTableEntry {
@@ -381,7 +378,7 @@ impl<S, E> Search<S> for PvSearch<S, E> where
                 search_depth, search_depth,
                 <E as Evaluator>::Evaluation::min(), <E as Evaluator>::Evaluation::max(),
                 &states_preallocated,
-                &mut statistics[search_depth as usize - 1],
+                &mut statistics.last_mut().unwrap(),
                 interrupt.as_ref(),
             );
 
@@ -390,7 +387,7 @@ impl<S, E> Search<S> for PvSearch<S, E> where
             let elapsed_move = start_move.elapsed();
             let elapsed_move = elapsed_move.as_secs() as f32 + elapsed_move.subsec_nanos() as f32 / 1_000_000_000.0;
 
-            statistics[search_depth as usize - 1][0].time = elapsed_search;
+            statistics.last_mut().unwrap()[0].time = elapsed_search;
 
             if self.is_interrupted(&interrupt.as_ref()) {
                 break;
