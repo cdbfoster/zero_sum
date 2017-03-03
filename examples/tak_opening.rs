@@ -31,5 +31,5 @@ fn main() {
 
     let analysis = search.search(&state, None);
 
-    println!("{}", analysis.statistics);
+    println!("{}", analysis);
 }
