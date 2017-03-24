@@ -28,6 +28,7 @@ use rand::{thread_rng};
 pub use self::activation_function::{ActivationFunction, ReLuActivationFunction, TanHActivationFunction};
 pub use self::gradient_descent::{AdadeltaGradientDescent, GradientDescent, SimpleGradientDescent};
 pub use self::matrix::{MatrixCm, MatrixRm};
+pub use self::serialization::{read_network, write_network};
 
 /// Artificial neural network
 #[derive(Clone, Debug)]
@@ -455,3 +456,4 @@ pub fn calculate_error_derivatives<F>(outputs: &MatrixRm, targets: &MatrixRm, er
 mod activation_function;
 mod gradient_descent;
 mod matrix;
+mod serialization;
