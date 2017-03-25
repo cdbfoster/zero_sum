@@ -215,6 +215,56 @@ impl State {
 
         Some(state)
     }
+
+    pub fn to_tps(&self) -> String {
+        let mut tps = String::from("[TPS \"");
+
+        let mut y = self.board.len() - 1;
+        loop {
+            let mut x = 0;
+            while x < self.board.len() {
+                if self.board[x][y].is_empty() {
+                    tps += "x";
+                    let mut empty = 1;
+                    while x + 1 < self.board.len() && self.board[x + 1][y].is_empty() {
+                        x += 1;
+                        empty += 1;
+                    }
+                    if empty > 1 {
+                        tps += &format!("{}", empty);
+                    }
+                } else {
+                    for piece in &self.board[x][y] {
+                        match *piece {
+                            Piece::Flatstone(Color::White) => tps += "1",
+                            Piece::Flatstone(Color::Black) => tps += "2",
+                            Piece::StandingStone(Color::White) => tps += "1S",
+                            Piece::StandingStone(Color::Black) => tps += "2S",
+                            Piece::Capstone(Color::White) => tps += "1C",
+                            Piece::Capstone(Color::Black) => tps += "2C",
+                        }
+                    }
+                }
+
+                x += 1;
+                if x < self.board.len() {
+                    tps += ",";
+                }
+            }
+
+            if y == 0 {
+                break;
+            } else {
+                y -= 1;
+                tps += "/";
+            }
+        }
+
+        tps += &format!(" {} ", self.ply_count % 2 + 1);
+        tps += &format!("{}\"]", self.ply_count / 2 + 1);
+
+        tps
+    }
 }
 
 impl Clone for State {
