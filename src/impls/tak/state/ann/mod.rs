@@ -422,7 +422,7 @@ pub fn calculate_error_derivatives<F>(outputs: &MatrixRm, targets: &MatrixRm, er
     debug_assert!(outputs.same_size(error_derivatives), "outputs's dimensions are different than error_derivatives's!");
 
     if F::new().as_any().is::<TanHActivationFunction>() {
-        // error_derivatives = (outputs - targets) .* (1.0 - (outputs ^ 2))
+        // error_derivatives = (outputs - targets) .* (1.0 - (tanh(outputs) ^ 2))
         error_derivatives.values.clone_from(&outputs.values);
         blas::saxpy(
             (error_derivatives.rows * error_derivatives.columns) as i32,
@@ -432,7 +432,8 @@ pub fn calculate_error_derivatives<F>(outputs: &MatrixRm, targets: &MatrixRm, er
         );
 
         for i in 0..error_derivatives.values.len() {
-            error_derivatives.values[i] *= 1.0 - (outputs.values[i] * outputs.values[i]);
+            let tanh_x = outputs.values[i].tanh();
+            error_derivatives.values[i] *= 1.0 - (tanh_x * tanh_x);
         }
     } else { // Linear
         // error_derivatives = (outputs - targets) > 0.0 ? 1.0 : -1.0
