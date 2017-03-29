@@ -17,7 +17,6 @@
 // Copyright 2016-2017 Chris Foster
 //
 
-use std::ptr::write_bytes;
 use std::ops::{Index, IndexMut};
 
 /// Column-major matrix
@@ -34,14 +33,6 @@ impl MatrixCm {
             rows: rows,
             columns: columns,
             values: vec![0.0; rows * columns],
-        }
-    }
-
-    pub fn ones(rows: usize, columns: usize) -> MatrixCm {
-        MatrixCm {
-            rows: rows,
-            columns: columns,
-            values: vec![1.0; rows * columns],
         }
     }
 
@@ -73,13 +64,6 @@ impl MatrixCm {
 
     pub fn same_size(&self, other: &MatrixCm) -> bool {
         self.rows == other.rows && self.columns == other.columns
-    }
-
-    pub fn zero(&mut self) {
-        unsafe {
-            let values = self.values.as_mut_ptr();
-            write_bytes(values, 0x00, self.values.len());
-        }
     }
 }
 
@@ -118,14 +102,6 @@ impl MatrixRm {
         }
     }
 
-    pub fn ones(rows: usize, columns: usize) -> MatrixRm {
-        MatrixRm {
-            rows: rows,
-            columns: columns,
-            values: vec![1.0; rows * columns],
-        }
-    }
-
     pub fn from_vec(rows: usize, columns: usize, values: Vec<f32>) -> MatrixRm {
         assert!(values.len() == rows * columns, "Dimension mismatch in matrix creation!");
 
@@ -138,13 +114,6 @@ impl MatrixRm {
 
     pub fn same_size(&self, other: &MatrixRm) -> bool {
         self.rows == other.rows && self.columns == other.columns
-    }
-
-    pub fn zero(&mut self) {
-        unsafe {
-            let values = self.values.as_mut_ptr();
-            write_bytes(values, 0x00, self.values.len());
-        }
     }
 
     pub fn resize(&mut self, rows: usize, columns: usize) {
