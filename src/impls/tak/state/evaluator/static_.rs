@@ -21,7 +21,7 @@ use std::cmp;
 use std::i32;
 
 use analysis::{self, Evaluation as EvaluationTrait};
-use impls::tak::{Color};
+use impls::tak::Color;
 use impls::tak::resolution::Resolution;
 use impls::tak::state::State;
 use impls::tak::state::metadata::{Bitmap, BitmapInterface, BOARD, EDGE, Metadata};
