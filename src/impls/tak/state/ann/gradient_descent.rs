@@ -115,10 +115,11 @@ pub struct AdadeltaGradientDescent {
     biases_e: Vec<MatrixRm>,
     biases_rms: Vec<MatrixRm>,
     biases_temp: Vec<MatrixRm>,
+    regularization: f32,
 }
 
 impl AdadeltaGradientDescent {
-    pub fn new(inputs: usize, hidden_layers: &[usize], outputs: usize) -> AdadeltaGradientDescent {
+    pub fn new(inputs: usize, hidden_layers: &[usize], outputs: usize, regularization: f32) -> AdadeltaGradientDescent {
         assert!(inputs > 0, "Invalid number of inputs!");
         assert!(hidden_layers.iter().find(|&&l| l == 0).is_none(), "Invalid number of hidden-layer neurons!");
         assert!(outputs > 0, "Invalid number of outputs!");
@@ -150,6 +151,7 @@ impl AdadeltaGradientDescent {
             biases_e: biases.clone(),
             biases_rms: biases.clone(),
             biases_temp: biases,
+            regularization: regularization,
         }
     }
 }
@@ -251,9 +253,17 @@ impl GradientDescent for AdadeltaGradientDescent {
             );
 
             let epsilon = 1e-8;
-            // weights_delta = weight_gradients .* (weights_rms + epsilon).sqrt() / (weights_e + epsilon).sqrt()
+            // weights_delta = weight_gradients .* (weights_rms + epsilon).sqrt() / (weights_e + epsilon).sqrt() + weight_reg
             for i in 0..weight_gradients.values.len() {
-                weights_temp.values[i] = weight_gradients.values[i] * (weights_rms.values[i] + epsilon).sqrt() / (weights_e.values[i] + epsilon).sqrt();
+                let weight_reg = {
+                    let weight = weights.values[i];
+                    if weight > 0.0 {
+                        weight.min(self.regularization)
+                    } else {
+                        weight.max(-self.regularization)
+                    }
+                };
+                weights_temp.values[i] = weight_gradients.values[i] * (weights_rms.values[i] + epsilon).sqrt() / (weights_e.values[i] + epsilon).sqrt() + weight_reg;
             }
             // biases_delta = bias_gradients .* (biases_rms + epsilon).sqrt() / (biases_e + epsilon).sqrt()
             for i in 0..bias_gradients.values.len() {
