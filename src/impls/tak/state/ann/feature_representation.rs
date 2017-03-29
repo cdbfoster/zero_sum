@@ -39,14 +39,14 @@ pub fn gather_features(state: &State) -> Vec<f32> {
     features.push(1.0 - state.p2_capstones as f32);
 
     // 2 - White capstone position
-    let position = get_position(state.metadata.capstones & state.metadata.p1_pieces);
-    features.push(position.0);
-    features.push(position.1);
+    let (x, y) = get_position(state.metadata.capstones & state.metadata.p1_pieces);
+    features.push(x);
+    features.push(y);
 
     // 2 - Black capstone position
-    let position = get_position(state.metadata.capstones & state.metadata.p2_pieces);
-    features.push(position.0);
-    features.push(position.1);
+    let (x, y) = get_position(state.metadata.capstones & state.metadata.p2_pieces);
+    features.push(x);
+    features.push(y);
 
     // 1 - White played standing stones
     features.push((state.metadata.standing_stones & state.metadata.p1_pieces).get_population() as f32 / 5.0);
