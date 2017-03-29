@@ -21,7 +21,7 @@ use impls::tak::{Color, Direction, Piece, State};
 use impls::tak::state::metadata::{Bitmap, BitmapInterface, EDGE};
 
 pub fn gather_features(state: &State) -> Vec<f32> {
-    let mut features = Vec::new();
+    let mut features = Vec::with_capacity(336);
 
     // 1 - Side to move
     features.push((state.ply_count % 2) as f32);
