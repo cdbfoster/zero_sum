@@ -54,28 +54,25 @@ pub fn gather_features(state: &State) -> Vec<f32> {
     // 1 - Black played standing stones
     features.push((state.metadata.standing_stones & state.metadata.p2_pieces).get_population() as f32 / 5.0);
 
-    // 25 - Stack heights
-    for column in &state.board {
-        for row in column {
-            features.push(row.len() as f32 / 10.0);
-        }
-    }
-
-    // 250 - Board configuration
-    for column in &state.board {
-        for row in column {
-            for i in 0..10 {
-                if i < row.len() {
-                    features.push(match row[i] {
-                        Piece::Flatstone(Color::White) => 1.0,
-                        Piece::Flatstone(Color::Black) => 0.0,
-                        Piece::StandingStone(Color::White) => 0.75,
-                        Piece::StandingStone(Color::Black) => 0.25,
-                        _ => 0.5,
-                    });
-                } else {
-                    features.push(0.5);
-                }
+    // 275 - Stack positions and configurations, ordered tallest to shortest
+    let mut stacks = state.board.iter().flat_map(|column| column.iter()).enumerate().map(|(i, stack)| (stack, (i / 5) as f32 / 4.0, (i % 5) as f32 / 4.0)).collect::<Vec<_>>();
+    stacks.sort_by(|a, b| {
+        b.0.len().cmp(&a.0.len())
+    });
+    for &(stack, x, y) in &stacks {
+        features.push(x);
+        features.push(y);
+        for i in 0..9 {
+            if i < stack.len() {
+                features.push(match stack[i] {
+                    Piece::Flatstone(Color::White) => 1.0,
+                    Piece::Flatstone(Color::Black) => 0.0,
+                    Piece::StandingStone(Color::White) => 0.75,
+                    Piece::StandingStone(Color::Black) => 0.25,
+                    _ => 0.5,
+                });
+            } else {
+                features.push(0.5);
             }
         }
     }
