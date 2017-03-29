@@ -77,6 +77,19 @@ pub fn gather_features(state: &State) -> Vec<f32> {
         }
     }
 
+    // 50 - Influence
+    let blocks = state.metadata.standing_stones | state.metadata.capstones;
+    evaluate_influence(&mut features,
+        blocks,
+        state.metadata.p1_pieces,
+        &state.metadata.p1_flatstones,
+    );
+    evaluate_influence(&mut features,
+        blocks,
+        state.metadata.p2_pieces,
+        &state.metadata.p2_flatstones,
+    );
+
     features
 }
 
@@ -98,5 +111,78 @@ fn get_position(mut bitmap: Bitmap) -> (f32, f32) {
     }
 
     (x as f32 / 4.0, y as f32 / 4.0)
+}
+
+fn evaluate_influence(features: &mut Vec<f32>, blocks: Bitmap, own_pieces: Bitmap, own_stacks: &[Bitmap]) {
+    fn add_bitmap(accumulator: &mut Vec<Bitmap>, mut bitmap: Bitmap) {
+        if accumulator.is_empty() {
+            accumulator.push(bitmap);
+            return;
+        }
+
+        let len = accumulator.len();
+        let carry = bitmap & accumulator[len - 1];
+        if carry != 0 {
+            accumulator[len - 1] ^= carry;
+            accumulator.push(carry);
+            bitmap ^= carry;
+        }
+
+        for level in (0..len - 1).rev() {
+            let carry = bitmap & accumulator[level];
+            accumulator[level] ^= carry;
+            accumulator[level + 1] |= carry;
+            bitmap ^= carry;
+        }
+
+        accumulator[0] |= bitmap;
+    }
+
+    let own_blocks = blocks & own_pieces;
+
+    let mut stack_levels = Vec::new();
+    add_bitmap(&mut stack_levels, own_blocks);
+    for &level in own_stacks {
+        add_bitmap(&mut stack_levels, level & own_pieces);
+    }
+
+    let add_influence = |influence: &mut Vec<Bitmap>, pieces: Bitmap, cast: usize| {
+        use impls::tak::Direction::*;
+
+        let mut cast_map = [pieces; 4];
+        for _ in 0..cast {
+            cast_map[North as usize] <<= 5;
+            cast_map[East as usize] = (cast_map[East as usize] >> 1) & !EDGE[5][West as usize];
+            cast_map[South as usize] >>= 5;
+            cast_map[West as usize] = (cast_map[West as usize] << 1) & !EDGE[5][East as usize];
+
+            add_bitmap(influence, cast_map[North as usize]);
+            add_bitmap(influence, cast_map[East as usize]);
+            add_bitmap(influence, cast_map[South as usize]);
+            add_bitmap(influence, cast_map[West as usize]);
+
+            cast_map[North as usize] &= !blocks;
+            cast_map[East as usize] &= !blocks;
+            cast_map[South as usize] &= !blocks;
+            cast_map[West as usize] &= !blocks;
+        }
+    };
+
+    let mut influence = Vec::new();
+    for (cast, &level) in stack_levels.iter().enumerate() {
+        add_influence(&mut influence, level, cast + 1);
+    }
+
+    for _ in 0..25 {
+        features.push(0.0);
+    }
+
+    for (level, map) in influence.iter().enumerate() {
+        for i in 0..25 {
+            if map.get(i % 5, i / 5, 5) == true {
+                features[286 + i] = (level + 1) as f32 / 10.0;
+            }
+        }
+    }
 }
 
