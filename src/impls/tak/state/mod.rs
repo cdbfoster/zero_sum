@@ -395,7 +395,7 @@ impl fmt::Display for State {
 pub mod evaluator;
 
 #[cfg(feature = "with_tak_ann")]
-pub mod ann; // XXX make private
+mod ann;
 
 mod extrapolation;
 mod metadata;
