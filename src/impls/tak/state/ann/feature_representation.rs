@@ -21,7 +21,7 @@ use impls::tak::{Color, Direction, Piece, State};
 use impls::tak::state::metadata::{Bitmap, BitmapInterface, EDGE};
 
 pub fn gather_features(state: &State) -> Vec<f32> {
-    let mut features = Vec::with_capacity(336);
+    let mut features = Vec::with_capacity(339);
 
     // 1 - Side to move
     features.push((state.ply_count % 2) as f32);
@@ -32,16 +32,20 @@ pub fn gather_features(state: &State) -> Vec<f32> {
     // 1 - Black reserve flatstones
     features.push(state.p2_flatstones as f32 / 21.0);
 
+    // 1 - Empty board spaces
+    let mut stacks = state.board.iter().flat_map(|column| column.iter()).enumerate().map(|(i, stack)| (stack, (i / 5) as f32 / 4.0, (i % 5) as f32 / 4.0)).collect::<Vec<_>>();
+    features.push(stacks.iter().filter(|&&(stack, _, _)| !stack.is_empty()).count() as f32 / 25.0);
+
     // 1 - White played capstone
     features.push(1.0 - state.p1_capstones as f32);
-
-    // 1 - Black played capstone
-    features.push(1.0 - state.p2_capstones as f32);
 
     // 2 - White capstone position
     let (x, y) = get_position(state.metadata.capstones & state.metadata.p1_pieces);
     features.push(x);
     features.push(y);
+
+    // 1 - Black played capstone
+    features.push(1.0 - state.p2_capstones as f32);
 
     // 2 - Black capstone position
     let (x, y) = get_position(state.metadata.capstones & state.metadata.p2_pieces);
@@ -54,8 +58,15 @@ pub fn gather_features(state: &State) -> Vec<f32> {
     // 1 - Black played standing stones
     features.push((state.metadata.standing_stones & state.metadata.p2_pieces).get_population() as f32 / 5.0);
 
+    // 1 - Largest white road group
+    let p1_road_group_sizes = state.metadata.p1_road_groups.iter().map(|group| group.get_population()).collect::<Vec<_>>();
+    features.push(8.0f32.min(*p1_road_group_sizes.iter().max().unwrap_or(&0) as f32) / 8.0);
+
+    // 1 - Largest black road group
+    let p2_road_group_sizes = state.metadata.p2_road_groups.iter().map(|group| group.get_population()).collect::<Vec<_>>();
+    features.push(8.0f32.min(*p2_road_group_sizes.iter().max().unwrap_or(&0) as f32) / 8.0);
+
     // 275 - Stack positions and configurations, ordered tallest to shortest
-    let mut stacks = state.board.iter().flat_map(|column| column.iter()).enumerate().map(|(i, stack)| (stack, (i / 5) as f32 / 4.0, (i % 5) as f32 / 4.0)).collect::<Vec<_>>();
     stacks.sort_by(|a, b| {
         b.0.len().cmp(&a.0.len())
     });
@@ -69,7 +80,8 @@ pub fn gather_features(state: &State) -> Vec<f32> {
                     Piece::Flatstone(Color::Black) => 0.0,
                     Piece::StandingStone(Color::White) => 0.75,
                     Piece::StandingStone(Color::Black) => 0.25,
-                    _ => 0.5,
+                    Piece::Capstone(Color::White) => 0.875,
+                    Piece::Capstone(Color::Black) => 0.125,
                 });
             } else {
                 features.push(0.5);

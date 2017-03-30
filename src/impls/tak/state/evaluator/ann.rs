@@ -62,13 +62,14 @@ fn unscale_evaluation(evaluation: f32, common: f32, win: f32) -> f32 {
     }
 }
 
+#[derive(Clone)]
 pub struct AnnEvaluator {
     ann: Ann<ReLuActivationFunction, TanHActivationFunction, AdadeltaGradientDescent>,
 }
 
 impl AnnEvaluator {
     pub fn new() -> AnnEvaluator {
-        let input_count = 336;
+        let input_count = 339;
         let hidden_layers = [150, 64, 32];
         let output_count = 1;
 
@@ -76,21 +77,21 @@ impl AnnEvaluator {
 
         // Global group
         for column in 0..10 {
-            for row in 0..11 {
+            for row in 0..14 {
                 weight_mask[column][row] = 1.0;
             }
         }
 
         // Stack positions and configuration
         for column in 10..125 {
-            for row in 11..286 {
+            for row in 14..289 {
                 weight_mask[column][row] = 1.0;
             }
         }
 
         // Influence
         for column in 125..150 {
-            for row in 286..336 {
+            for row in 289..339 {
                 weight_mask[column][row] = 1.0;
             }
         }
@@ -134,7 +135,7 @@ impl AnnEvaluator {
     }
 
     pub fn train_batch(&mut self, positions: &[State], labels: &[Evaluation], error: Option<&mut f32>) {
-        let mut inputs = MatrixRm::zeros(positions.len(), 336);
+        let mut inputs = MatrixRm::zeros(positions.len(), 339);
         for i in 0..positions.len() {
             inputs[i].clone_from_slice(&gather_features(&positions[i]));
         }
