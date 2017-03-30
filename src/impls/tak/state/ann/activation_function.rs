@@ -31,7 +31,7 @@ pub trait ActivationFunction {
     fn as_any(&self) -> &Any;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ReLuActivationFunction;
 
 impl ActivationFunction for ReLuActivationFunction {
@@ -56,7 +56,7 @@ impl ActivationFunction for ReLuActivationFunction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TanHActivationFunction;
 
 impl ActivationFunction for TanHActivationFunction {
