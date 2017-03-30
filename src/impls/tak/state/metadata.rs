@@ -97,6 +97,8 @@ impl Metadata {
             }
         }
 
+        metadata.calculate_road_groups();
+
         metadata
     }
 
