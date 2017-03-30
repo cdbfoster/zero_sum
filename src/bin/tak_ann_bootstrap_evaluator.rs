@@ -1,4 +1,22 @@
-extern crate rand;
+//
+// This file is part of zero_sum.
+//
+// zero_sum is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// zero_sum is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with zero_sum. If not, see <http://www.gnu.org/licenses/>.
+//
+// Copyright 2016-2017 Chris Foster
+//
+
 extern crate zero_sum;
 
 use std::cmp;
@@ -14,7 +32,7 @@ fn main() {
     let network_file = String::from("evaluator");
     let positions_file = String::from("training_positions");
     let labels_file = String::from("training_labels");
-    let progress_file = String::from("progress");
+    let progress_file = String::from("progress_bootstrap");
     let batch_size = 30;
 
     let mut evaluator = if let Ok(evaluator) = AnnEvaluator::from_file(&network_file) {
