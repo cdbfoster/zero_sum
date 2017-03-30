@@ -21,6 +21,7 @@ use impls::tak::Color;
 use resolution;
 
 /// The ways a game can end.
+#[derive(Debug)]
 pub enum Resolution {
     /// One player has completed a road.
     Road(Color),
