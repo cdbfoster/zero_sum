@@ -173,6 +173,7 @@ fn evaluate_influence(features: &mut Vec<f32>, blocks: Bitmap, own_pieces: Bitma
         add_influence(&mut influence, level, cast + 1);
     }
 
+    let start_index = features.len();
     for _ in 0..25 {
         features.push(0.0);
     }
@@ -180,9 +181,8 @@ fn evaluate_influence(features: &mut Vec<f32>, blocks: Bitmap, own_pieces: Bitma
     for (level, map) in influence.iter().enumerate() {
         for i in 0..25 {
             if map.get(i % 5, i / 5, 5) == true {
-                features[286 + i] = (level + 1) as f32 / 10.0;
+                features[start_index + i] = (level + 1) as f32 / 10.0;
             }
         }
     }
 }
-
