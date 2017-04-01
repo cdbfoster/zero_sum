@@ -20,10 +20,15 @@
 use std::fs::OpenOptions;
 use std::i32;
 use std::io::BufReader;
+use std::sync::{Arc, mpsc, Mutex};
+use std::thread;
 
 use analysis::{self, Evaluation as EvaluationTrait};
-use impls::tak::state::State;
+use analysis::search::Search;
+use analysis::search::pvsearch::PvSearch;
+use impls::tak::{Color, Resolution, State};
 use impls::tak::state::ann::*;
+use state::State as StateTrait;
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Evaluation(pub i32);
@@ -155,6 +160,102 @@ impl AnnEvaluator {
 
         self.ann.train(&inputs, &targets, 0.5);
     }
+
+    /// Use temporal difference learning to train the system through self-play.
+    pub fn train_batch_tdleaf(&mut self, positions: &[State], error: Option<&mut f32>, thread_count: usize) {
+        let search_depth = 3;
+
+        let total_error = Arc::new(Mutex::new(0.0));
+
+        let mut inputs = MatrixRm::zeros(positions.len(), 339);
+        for i in 0..positions.len() {
+            inputs[i].clone_from_slice(&gather_features(&positions[i]));
+        }
+
+        let targets = Arc::new(Mutex::new(MatrixRm::zeros(positions.len(), 1)));
+
+        let remaining = Arc::new(Mutex::new(positions.len()));
+        let (finished_sender, finished_receiver) = mpsc::channel();
+
+        for _ in 0..thread_count {
+            let total_error = total_error.clone();
+            let positions = positions.to_vec();
+            let targets = targets.clone();
+            let remaining = remaining.clone();
+            let finished_sender = finished_sender.clone();
+            let mut search = PvSearch::with_depth(self.clone(), search_depth);
+
+            thread::spawn(move || {
+                loop {
+                    let i = {
+                        let mut remaining = remaining.lock().unwrap();
+                        if *remaining == 0 {
+                            break;
+                        }
+                        *remaining -= 1;
+                        *remaining
+                    };
+
+                    let result = search.search(&positions[i], None);
+                    let leaf_score = scale_evaluation(result.evaluation.0 as f32, 12_000.0, Evaluation::win().0 as f32);
+
+                    if !result.principal_variation.is_empty() {
+                        let mut state = match positions[i].execute_ply(&result.principal_variation[0]) {
+                            Ok(next) => next,
+                            Err(error) => panic!("Invalid principal variation: {}", error),
+                        };
+
+                        let mut accumulated_error = 0.0;
+                        let mut last_score = leaf_score;
+                        let mut td_discount = 0.83;
+                        let mut absolute_discount = 0.995;
+
+                        for j in 0..10 {
+                            let result = search.search(&state, None);
+
+                            let sign = if j % 2 == 0 { -1.0 } else { 1.0 };
+                            let next_score = scale_evaluation(result.evaluation.0 as f32, 12_000.0, Evaluation::win().0 as f32)
+                                * absolute_discount * sign;
+
+                            accumulated_error += td_discount * (next_score - last_score);
+                            td_discount *= 0.83;
+                            last_score = next_score;
+
+                            absolute_discount *= 0.995;
+
+                            if state.check_resolution().is_some() || result.principal_variation.is_empty() {
+                                break;
+                            }
+
+                            match state.execute_ply(&result.principal_variation[0]) {
+                                Ok(next) => state = next,
+                                Err(error) => panic!("Invalid principal variation: {}", error),
+                            }
+                        }
+
+                        *total_error.lock().unwrap() += accumulated_error.abs();
+
+                        // Clamp error
+                        accumulated_error = accumulated_error.max(-1.0).min(1.0);
+
+                        targets.lock().unwrap()[i].clone_from_slice(&[leaf_score + accumulated_error]);
+                    }
+                }
+
+                finished_sender.send(()).ok();
+            });
+        }
+
+        for _ in 0..thread_count {
+            finished_receiver.recv().ok();
+        }
+
+        if let Some(error) = error {
+            *error = *total_error.lock().unwrap() / positions.len() as f32;
+        }
+
+        self.ann.train(&inputs, &*targets.lock().unwrap(), 0.5);
+    }
 }
 
 impl analysis::Evaluator for AnnEvaluator {
@@ -162,6 +263,25 @@ impl analysis::Evaluator for AnnEvaluator {
     type Evaluation = Evaluation;
 
     fn evaluate(&self, state: &State) -> Evaluation {
+        let next_color = if state.ply_count % 2 == 0 {
+            Color::White
+        } else {
+            Color::Black
+        };
+
+        match state.check_resolution() {
+            None => (),
+            Some(Resolution::Road(win_color)) |
+            Some(Resolution::Flat(win_color)) => {
+                if win_color == next_color {
+                    return Evaluation::win() - Evaluation(state.ply_count as i32);
+                } else {
+                    return -Evaluation::win() + Evaluation(state.ply_count as i32);
+                }
+            },
+            Some(Resolution::Draw) => return Evaluation::null(),
+        }
+
         let features = gather_features(state);
         let input = MatrixRm::from_vec(1, features.len(), features);
         let mut output = MatrixRm::zeros(1, 1);
