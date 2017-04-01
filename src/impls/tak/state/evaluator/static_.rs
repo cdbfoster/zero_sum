@@ -75,6 +75,7 @@ const WEIGHT: Weights = Weights {
 /// Provides a static evaluation of a tak state.  This evaluator considers
 /// top-level pieces, stacked flatstones, road-group size, one-away threats,
 /// and stack influence.
+#[derive(Clone)]
 pub struct StaticEvaluator;
 
 impl analysis::Evaluator for StaticEvaluator {
