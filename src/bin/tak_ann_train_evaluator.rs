@@ -22,6 +22,7 @@ extern crate zero_sum;
 use std::cmp;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
+use std::path::Path;
 use std::time::Instant;
 
 use zero_sum::impls::tak::evaluator::AnnEvaluator;
@@ -34,27 +35,28 @@ fn main() {
     let batch_size = 30;
     let serialize_interval = 10;
     let progress_interval = 1;
+    let threads = 4;
 
     println!("Reading positions...");
-    let positions = if let Ok(file) = OpenOptions::new().read(true).open(&positions_file) {
-        let reader = BufReader::new(file);
-        reader.lines().map(|line| State::from_tps(line.unwrap().trim()).unwrap()).collect::<Vec<_>>()
+    let mut positions = if let Ok(file) = OpenOptions::new().read(true).open(&positions_file) {
+        BufReader::new(file)
     } else {
         panic!("Cannot read file: {}", positions_file);
     };
-    println!("  Done. Read {} positions.", positions.len());
+    println!("  Done.");
 
     println!("Searching for resume network file...");
     let (start_iteration, mut evaluator) = {
         let mut resume_iteration = 0;
         let mut evaluator = None;
-        for iteration in (0..(positions.len() / batch_size + 1)).rev() {
-            if iteration % serialize_interval == 0 {
-                if let Ok(read) = AnnEvaluator::from_file(&format!("{}_{:06}", &network_prefix, iteration)) {
+        for iteration in (0..).map(|i| i * serialize_interval) {
+            if Path::new(&format!("{}_{:06}", &network_prefix, iteration)).exists() {
+                resume_iteration = iteration;
+            } else {
+                if let Ok(read) = AnnEvaluator::from_file(&format!("{}_{:06}", &network_prefix, resume_iteration)) {
                     evaluator = Some(read);
-                    resume_iteration = iteration;
-                    break;
                 }
+                break;
             }
         }
 
@@ -74,15 +76,30 @@ fn main() {
             println!("  Done. No resume network file found. Starting from random initialization.");
         }
     } else {
-        println!("  Done. Resuming from iteration {}.", start_iteration);
+        println!("  Done. Resuming from iteration {}.", start_iteration - 1);
     }
 
-    println!("Beginning training...");
-    for iteration in start_iteration..(positions.len() / batch_size + 1) {
-        let start_index = iteration * batch_size;
-        let end_index = cmp::min((iteration + 1) * batch_size, positions.len());
+    // Skip previous positions
+    for _ in 0..start_iteration * batch_size {
+        let mut line = String::new();
+        if positions.read_line(&mut line).unwrap() == 0 {
+            panic!("Too few positions in {} to continue training!", &positions_file);
+        }
+    }
 
-        if start_index == positions.len() {
+    println!("Training...");
+    for iteration in start_iteration.. {
+        let mut batch = Vec::with_capacity(batch_size);
+        for _ in 0..batch_size {
+            let mut line = String::new();
+            if positions.read_line(&mut line).unwrap() == 0 {
+                break;
+            }
+
+            batch.push(State::from_tps(line.trim()).unwrap());
+        }
+
+        if batch.is_empty() {
             break;
         }
 
@@ -90,15 +107,15 @@ fn main() {
 
         let mut error = 0.0;
         evaluator.train_batch_tdleaf(
-            &positions[start_index..end_index],
+            &batch,
             Some(&mut error),
-            4,
+            threads,
         );
 
         let elapsed_batch = start_batch.elapsed();
         let elapsed_batch = elapsed_batch.as_secs() as f32 + elapsed_batch.subsec_nanos() as f32 / 1_000_000_000.0;
 
-        println!("Iteration {}: Error: {:.6}, Time: {:.2}s/position", iteration, error, elapsed_batch / (end_index - start_index) as f32);
+        println!("Iteration {}: Error: {:.6}, Time: {:.2}s/position", iteration, error, elapsed_batch / batch.len() as f32);
 
         if iteration % serialize_interval == 0 {
             evaluator.to_file(&format!("{}_{:06}", &network_prefix, iteration));
