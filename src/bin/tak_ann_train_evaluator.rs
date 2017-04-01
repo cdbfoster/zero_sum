@@ -19,7 +19,6 @@
 
 extern crate zero_sum;
 
-use std::cmp;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
