@@ -31,7 +31,7 @@ use zero_sum::Resolution as ResolutionTrait;
 use zero_sum::State as StateTrait;
 
 fn main() {
-    let network_file = String::from("evaluator_000240");
+    let network_file = String::from("evaluator");
     let games = 50;
     let threads = 4;
     let search_depth = 3;
@@ -103,7 +103,7 @@ fn main() {
                 let mut static_search = PvSearch::with_depth(static_evaluator.clone(), search_depth);
 
                 loop {
-                    let ply = if (game + (thread % 2) + state.ply_count) % 2 == 0 {
+                    let ply = if (game + state.ply_count) % 2 == 0 {
                         let result = ann_search.search(&state, None);
                         result.principal_variation[0].clone()
                     } else {
@@ -119,7 +119,7 @@ fn main() {
                     if let Some(resolution) = state.check_resolution() {
                         if let Some(winner) = resolution.get_winner() {
                             println!("Thread {}: Game {}: {} wins. {:?}", thread, game,
-                                if (game + (thread % 2) + winner as u16) % 2 == 0 {
+                                if (game + winner as u16) % 2 == 0 {
                                     *ann_wins.lock().unwrap() += 1;
                                     "ANN"
                                 } else {
