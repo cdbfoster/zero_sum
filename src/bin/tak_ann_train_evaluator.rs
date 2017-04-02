@@ -34,6 +34,7 @@ fn main() {
     let batch_size = 30;
     let serialize_interval = 10;
     let progress_interval = 1;
+    let resume_iteration = None;
     let threads = 4;
 
     println!("Reading positions...");
@@ -46,21 +47,29 @@ fn main() {
 
     println!("Searching for resume network file...");
     let (start_iteration, mut evaluator) = {
-        let mut resume_iteration = 0;
+        let mut resume = 0;
         let mut evaluator = None;
-        for iteration in (0..).map(|i| i * serialize_interval) {
-            if Path::new(&format!("{}_{:06}", &network_prefix, iteration)).exists() {
-                resume_iteration = iteration;
-            } else {
-                if let Ok(read) = AnnEvaluator::from_file(&format!("{}_{:06}", &network_prefix, resume_iteration)) {
-                    evaluator = Some(read);
+
+        if let Some(resume_iteration) = resume_iteration {
+            if let Ok(read) = AnnEvaluator::from_file(&format!("{}_{:06}", &network_prefix, resume_iteration)) {
+                resume = resume_iteration;
+                evaluator = Some(read);
+            }
+        } else {
+            for iteration in (0..).map(|i| i * serialize_interval) {
+                if Path::new(&format!("{}_{:06}", &network_prefix, iteration)).exists() {
+                    resume = iteration;
+                } else {
+                    if let Ok(read) = AnnEvaluator::from_file(&format!("{}_{:06}", &network_prefix, resume)) {
+                        evaluator = Some(read);
+                    }
+                    break;
                 }
-                break;
             }
         }
 
         if let Some(evaluator) = evaluator {
-            (resume_iteration + 1, evaluator)
+            (resume + 1, evaluator)
         } else {
             (0, AnnEvaluator::new())
         }
