@@ -68,7 +68,7 @@ fn main() {
 
     // If we're starting at the beginning, look for a bootstrapped network file
     if start_iteration == 0 {
-        if let Ok(read) = AnnEvaluator::from_file(&format!("{}", &network_prefix)) {
+        if let Ok(read) = AnnEvaluator::from_file(&format!("{}_bootstrap", &network_prefix)) {
             println!("  Done. No resume network file found. Found bootstrap network file.");
             evaluator = read;
         } else {
