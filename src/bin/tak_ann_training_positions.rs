@@ -30,9 +30,9 @@ use std::str::FromStr;
 use rand::{Rng, thread_rng};
 
 use zero_sum::State as StateTrait;
-use zero_sum::analysis::{Evaluator, Extrapolatable};
+use zero_sum::analysis::{Evaluation, Evaluator, Extrapolatable};
 use zero_sum::impls::tak::{Color, Direction, Piece, Ply, State};
-use zero_sum::impls::tak::evaluator::StaticEvaluator;
+use zero_sum::impls::tak::evaluator::{AnnEvaluator, StaticEvaluator};
 
 fn main() {
     let players = vec![
@@ -54,6 +54,7 @@ fn main() {
     let sample_spacing = 2;
     let samples_per_base = 10;
     let label = true;
+    let normalize_range = true;
     let file_prefix = String::from("training");
 
     let connection = rusqlite::Connection::open("games_anon.db").unwrap();
@@ -107,7 +108,16 @@ fn main() {
     if label {
         println!("Labeling training positions...");
         let evaluator = StaticEvaluator;
-        let labels = states.iter().map(|s| evaluator.evaluate(s)).collect::<Vec<_>>();
+        let mut labels = states.iter().map(|s| evaluator.evaluate(s)).collect::<Vec<_>>();
+
+        if normalize_range {
+            let extent = labels.iter().map(|evaluation| evaluation.0.abs()).max().unwrap() as f32;
+            println!("  Normalizing to {}.", extent);
+
+            for label in &mut labels {
+                *label = <StaticEvaluator as Evaluator>::Evaluation::new((label.0 as f32 / extent * <AnnEvaluator as Evaluator>::Evaluation::win().0 as f32) as i32);
+            }
+        }
         println!("  Done. Labeled {} training positions.", labels.len());
 
         println!("Writing to file...");

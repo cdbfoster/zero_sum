@@ -30,6 +30,12 @@ use state::State as StateTrait;
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Evaluation(pub i32);
 
+impl Evaluation {
+    pub fn new(value: i32) -> Evaluation {
+        Evaluation(value)
+    }
+}
+
 prepare_evaluation_tuple!(Evaluation);
 
 impl analysis::Evaluation for Evaluation {
