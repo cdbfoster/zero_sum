@@ -29,11 +29,13 @@ use zero_sum::impls::tak::evaluator::AnnEvaluator;
 use zero_sum::impls::tak::State;
 
 fn main() {
-    let network_file = String::from("evaluator");
+    let network_file = String::from("evaluator_bootstrap");
     let positions_file = String::from("training_positions");
     let labels_file = String::from("training_labels");
     let progress_file = String::from("progress_bootstrap");
     let batch_size = 30;
+    let serialize_interval = 1000;
+    let progress_interval = 1000;
 
     let mut evaluator = if let Ok(evaluator) = AnnEvaluator::from_file(&network_file) {
         evaluator
@@ -69,7 +71,7 @@ fn main() {
             break;
         }
 
-        if iteration % 1000 == 0 {
+        if iteration % progress_interval == 0 {
             let mut error = 0.0;
 
             evaluator.train_batch(
@@ -91,6 +93,10 @@ fn main() {
                 &labels[start_index..end_index],
                 None,
             );
+        }
+
+        if iteration % serialize_interval == 0 {
+            evaluator.to_file(&format!("{}_{:06}", &network_file, iteration));
         }
     }
 
