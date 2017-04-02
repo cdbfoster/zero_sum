@@ -49,22 +49,12 @@ impl analysis::Evaluation for Evaluation {
     fn is_win(&self) -> bool { self.0 >= 99_000 }
 }
 
-/// [0 - common) => [0.0 - 0.9), [common - win] => [0.9 - 1.0]
-fn scale_evaluation(evaluation: f32, common: f32, win: f32) -> f32 {
-    if evaluation.abs() < common {
-        evaluation / common * 0.9
-    } else {
-        evaluation.signum() * (0.9 + (evaluation.abs() - common) / (win - common) * 0.1)
-    }
+fn scale_evaluation(evaluation: Evaluation) -> f32 {
+    evaluation.0 as f32 / Evaluation::win().0 as f32
 }
 
-/// [0.0 - 0.9) => [0 - common), [0.9 - 1.0] => [common - win]
-fn unscale_evaluation(evaluation: f32, common: f32, win: f32) -> f32 {
-    if evaluation.abs() < 0.9 {
-        evaluation / 0.9 * common
-    } else {
-        evaluation.signum() * ((evaluation.abs() - 0.9) / 0.1 * (win - common) + common)
-    }
+fn unscale_evaluation(evaluation: f32) -> Evaluation {
+    Evaluation((evaluation * Evaluation::win().0 as f32) as i32)
 }
 
 #[derive(Clone)]
@@ -147,7 +137,7 @@ impl AnnEvaluator {
 
         let mut targets = MatrixRm::zeros(labels.len(), 1);
         for i in 0..labels.len() {
-            targets[i].clone_from_slice(&[scale_evaluation(labels[i].0 as f32, 12_000.0, Evaluation::win().0 as f32)]);
+            targets[i].clone_from_slice(&[scale_evaluation(labels[i])]);
         }
 
         if let Some(error) = error {
@@ -197,7 +187,7 @@ impl AnnEvaluator {
                     };
 
                     let result = search.search(&positions[i], None);
-                    let leaf_score = scale_evaluation(result.evaluation.0 as f32, 12_000.0, Evaluation::win().0 as f32);
+                    let leaf_score = scale_evaluation(result.evaluation);
 
                     if !result.principal_variation.is_empty() {
                         let mut state = match positions[i].execute_ply(&result.principal_variation[0]) {
@@ -214,8 +204,7 @@ impl AnnEvaluator {
                             let result = search.search(&state, None);
 
                             let sign = if j % 2 == 0 { -1.0 } else { 1.0 };
-                            let next_score = scale_evaluation(result.evaluation.0 as f32, 12_000.0, Evaluation::win().0 as f32)
-                                * absolute_discount * sign;
+                            let next_score = sign * scale_evaluation(result.evaluation) * absolute_discount;
 
                             accumulated_error += td_discount * (next_score - last_score);
                             td_discount *= 0.83;
@@ -288,6 +277,6 @@ impl analysis::Evaluator for AnnEvaluator {
 
         self.ann.propagate_forward_simple(&input, &mut output);
 
-        Evaluation(unscale_evaluation(output.values[0], 12_000.0, Evaluation::win().0 as f32) as i32)
+        unscale_evaluation(output.values[0])
     }
 }
