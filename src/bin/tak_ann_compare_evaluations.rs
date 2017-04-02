@@ -27,15 +27,14 @@ use zero_sum::impls::tak::evaluator::{AnnEvaluator, StaticEvaluator};
 use zero_sum::impls::tak::State;
 
 fn main() {
-    let network_file = String::from("evaluator_000230");
-    let positions_file = String::from("training_positions");
-    let positions_count = 3000;
+    let network_file = String::from("evaluator");
+    let positions_file = String::from("comparison_positions");
     let output_file = String::from("comparison");
 
     println!("Reading positions...");
     let positions = if let Ok(file) = OpenOptions::new().read(true).open(&positions_file) {
         let reader = BufReader::new(file);
-        reader.lines().take(positions_count).map(|line| State::from_tps(line.unwrap().trim()).unwrap()).collect::<Vec<_>>()
+        reader.lines().map(|line| State::from_tps(line.unwrap().trim()).unwrap()).collect::<Vec<_>>()
     } else {
         panic!("Cannot read file: {}", positions_file);
     };
