@@ -19,8 +19,12 @@
 
 //! Contains evaluators for tak states.
 
+#[cfg(feature = "with_tak_ann")]
 pub use self::ann::AnnEvaluator;
+
 pub use self::static_::StaticEvaluator;
 
+#[cfg(feature = "with_tak_ann")]
 mod ann;
+
 mod static_;
