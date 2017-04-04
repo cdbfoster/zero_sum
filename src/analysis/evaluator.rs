@@ -100,13 +100,14 @@ pub trait Evaluator {
     /// # Panics
     /// Will panic if the execution of any ply in `plies` causes an error.
     fn evaluate_plies(&self, state: &Self::State, plies: &[<Self::State as State>::Ply]) -> Self::Evaluation {
-        match state.execute_plies(plies) {
-            Ok(final_state) => if plies.len() % 2 == 0 {
-                self.evaluate(&final_state)
-            } else {
-                -self.evaluate(&final_state)
-            },
-            Err(error) => panic!("Error calculating evaluation: {}", error),
+        let mut state = state.clone();
+        if let Err(error) = state.execute_plies(plies) {
+            panic!("Error calculating evaluation: {}", error);
+        }
+        if plies.len() % 2 == 0 {
+            self.evaluate(&state)
+        } else {
+            -self.evaluate(&state)
         }
     }
 }

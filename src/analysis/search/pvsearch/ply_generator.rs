@@ -17,38 +17,39 @@
 // Copyright 2016-2017 Chris Foster
 //
 
+use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 
 use analysis::Extrapolatable;
 use ply::Ply;
 use super::history::History;
 
-pub struct PlyGenerator<'a, X, P> where
-    X: 'a + Extrapolatable<P>,
+pub struct PlyGenerator<X, P> where
+    X: Extrapolatable<P>,
     P: Ply {
-    state: &'a X,
     principal_ply: Option<P>,
     history: Arc<Mutex<History>>,
     plies: Vec<P>,
     operation: u8,
+    phantom: PhantomData<X>,
 }
 
-impl<'a, X, P> PlyGenerator<'a, X, P> where
-    X: 'a + Extrapolatable<P>,
+impl<X, P> PlyGenerator<X, P> where
+    X: Extrapolatable<P>,
     P: Ply {
-    pub fn new(state: &'a X, principal_ply: Option<P>, history: Arc<Mutex<History>>) -> PlyGenerator<'a, X, P> {
+    pub fn new(state: &X, principal_ply: Option<P>, history: Arc<Mutex<History>>) -> PlyGenerator<X, P> {
         PlyGenerator {
-            state: state,
             principal_ply: principal_ply,
             history: history,
-            plies: Vec::new(),
+            plies: state.extrapolate(),
             operation: 0,
+            phantom: PhantomData,
         }
     }
 }
 
-impl<'a, X, P> Iterator for PlyGenerator<'a, X, P> where
-    X: 'a + Extrapolatable<P>,
+impl<X, P> Iterator for PlyGenerator<X, P> where
+    X: Extrapolatable<P>,
     P: Ply {
     type Item = P;
 
@@ -64,8 +65,6 @@ impl<'a, X, P> Iterator for PlyGenerator<'a, X, P> where
 
             if self.operation == 1 {
                 self.operation += 1;
-
-                self.plies = self.state.extrapolate();
 
                 {
                     let history = self.history.lock().unwrap();

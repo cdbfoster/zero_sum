@@ -44,6 +44,7 @@ pub struct State {
     /// The number of half-moves passed since the start.
     pub ply_count: u16,
 
+    ply_crushes: Vec<bool>,
     metadata: Metadata,
 }
 
@@ -70,13 +71,19 @@ impl State {
             p2_capstones: capstone_count,
             board: vec![vec![Vec::new(); board_size]; board_size],
             ply_count: 0,
+            ply_crushes: Vec::new(),
             metadata: Metadata::new(board_size),
         }
     }
 
     /// Creates a state from the given board size and executes the given plies.
     pub fn from_plies(size: usize, plies: &[Ply]) -> Result<State, String> {
-        State::new(size).execute_plies(plies)
+        let mut state = State::new(size);
+        if let Err(error) = state.execute_plies(plies) {
+            Err(error)
+        } else {
+            Ok(state)
+        }
     }
 
     /// Creates a state from a string in TPS format, i.e. `"[TPS \"x5/x5/x5/x5/x5 1 1\"]"`.
@@ -276,6 +283,7 @@ impl Clone for State {
             p2_capstones: self.p2_capstones,
             board: self.board.clone(),
             ply_count: self.ply_count,
+            ply_crushes: self.ply_crushes.clone(),
             metadata: self.metadata.clone(),
         }
     }
@@ -287,6 +295,7 @@ impl Clone for State {
         self.p2_capstones = source.p2_capstones;
         self.board.clone_from(&source.board);
         self.ply_count = source.ply_count;
+        self.ply_crushes.clone_from(&source.ply_crushes);
         self.metadata.clone_from(&source.metadata);
     }
 }

@@ -32,29 +32,32 @@ impl state::State for State {
         self.ply_count as usize
     }
 
-    fn execute_ply_preallocated(&self, ply: &Ply, next: &mut State) -> Result<(), String> {
-        next.clone_from(self);
-        next.ply_count += 1;
+    fn execute_ply(&mut self, ply: Option<&Ply>) -> Result<(), String> {
+        // Null move
+        if ply.is_none() {
+            self.ply_count += 1;
+            return Ok(());
+        }
 
-        let board_size = next.board.len();
+        let board_size = self.board.len();
 
-        match *ply {
+        match *ply.unwrap() {
             Ply::Place { x, y, ref piece } => {
-                if !next.board[x][y].is_empty() {
+                if !self.board[x][y].is_empty() {
                     return Err(String::from("Cannot place piece in an occupied space."));
                 }
 
                 let count = match *piece {
                     Piece::Flatstone(color) |
                     Piece::StandingStone(color) => if color == Color::White {
-                        &mut next.p1_flatstones
+                        &mut self.p1_flatstones
                     } else {
-                        &mut next.p2_flatstones
+                        &mut self.p2_flatstones
                     },
                     Piece::Capstone(color) => if color == Color::White {
-                        &mut next.p1_capstones
+                        &mut self.p1_capstones
                     } else {
-                        &mut next.p2_capstones
+                        &mut self.p2_capstones
                     },
                 };
 
@@ -64,72 +67,49 @@ impl state::State for State {
                     return Err(String::from("Insufficient pieces for placement."));
                 }
 
-                next.board[x][y].push(piece.clone());
+                self.board[x][y].push(piece.clone());
 
                 match *piece {
-                    Piece::Flatstone(color) => next.metadata.add_flatstone(
-                        color, x, y, next.board[x][y].len() - 1,
+                    Piece::Flatstone(color) => self.metadata.add_flatstone(
+                        color, x, y, self.board[x][y].len() - 1,
                     ),
-                    ref block => next.metadata.add_blocking_stone(block, x, y),
+                    ref block => self.metadata.add_blocking_stone(block, x, y),
                 }
 
                 match *piece {
                     Piece::Flatstone(_) |
-                    Piece::Capstone(_) => next.metadata.calculate_road_groups(),
+                    Piece::Capstone(_) => self.metadata.calculate_road_groups(),
                     _ => (),
                 }
+
+                self.ply_crushes.push(false);
             },
             Ply::Slide { x, y, direction, ref drops } => {
+                // First, verify that the slide is okay
                 let next_color = if self.ply_count % 2 == 0 {
                     Color::White
                 } else {
                     Color::Black
                 };
 
-                match next.board[x][y].last() {
-                    Some(&Piece::Flatstone(color)) |
-                    Some(&Piece::StandingStone(color)) |
-                    Some(&Piece::Capstone(color)) => if color != next_color {
+                if let Some(piece) = self.board[x][y].last() {
+                    if piece.get_color() != next_color {
                         return Err(String::from("Cannot move an opponent's piece."));
-                    },
-                    _ => (),
+                    }
                 }
 
-                let grab = drops.iter().fold(0, |acc, x| acc + x) as usize;
+                let grab: usize = drops.iter().sum::<u8>() as usize;
 
-                if grab > board_size || next.board[x][y].len() < grab {
+                if grab > board_size || self.board[x][y].len() < grab {
                     return Err(String::from("Illegal carry amount."));
-                }
-
-                let mut stack = Vec::new();
-	            for _ in 0..grab {
-	                let piece = next.board[x][y].pop().unwrap();
-
-	                match piece {
-	                    Piece::Flatstone(color) => next.metadata.remove_flatstone(
-	                        color, x, y, next.board[x][y].len(),
-                        ),
-                        ref block => next.metadata.remove_blocking_stone(block, x, y),
-                    }
-
-                    if let Some(revealed) = next.board[x][y].last() {
-                        next.metadata.reveal_flatstone(
-                            revealed.get_color(), x, y,
-                        );
-                    }
-
-	                stack.push(piece);
                 }
 
                 let (dx, dy) = direction.to_offset();
 
-                let mut nx = x as i8;
-                let mut ny = y as i8;
-
                 {
                     let (tx, ty) = (
-                        nx + dx * drops.len() as i8,
-                        ny + dy * drops.len() as i8,
+                        x as i8 + dx * drops.len() as i8,
+                        y as i8 + dy * drops.len() as i8,
                     );
 
                     if tx < 0 || tx >= board_size as i8 ||
@@ -138,24 +118,19 @@ impl state::State for State {
                     }
                 }
 
+                let mut nx = x as i8;
+                let mut ny = y as i8;
+
                 for drop in drops {
                     nx += dx;
                     ny += dy;
 
-                    if !next.board[nx as usize][ny as usize].is_empty() {
-                        let target_top = next.board[nx as usize][ny as usize].last().unwrap().clone();
-                        match target_top {
+                    if !self.board[nx as usize][ny as usize].is_empty() {
+                        match *self.board[nx as usize][ny as usize].last().unwrap() {
                             Piece::Capstone(_) => return Err(String::from("Cannot slide onto a capstone.")),
-                            Piece::StandingStone(color) => if stack.len() == 1 {
-                                match stack[0] {
-                                    Piece::Capstone(_) => {
-                                        *next.board[nx as usize][ny as usize].last_mut().unwrap() = Piece::Flatstone(color);
-                                        next.metadata.remove_blocking_stone(&Piece::StandingStone(color), nx as usize, ny as usize);
-                                        next.metadata.add_flatstone(
-                                            color, nx as usize, ny as usize,
-                                            next.board[nx as usize][ny as usize].len() - 1,
-                                        )
-                                    },
+                            Piece::StandingStone(_) => if *drop == 1 {
+                                match *self.board[x][y].last().unwrap() {
+                                    Piece::Capstone(_) => (),
                                     _ => return Err(String::from("Cannot slide onto a standing stone.")),
                                 }
                             } else {
@@ -164,10 +139,57 @@ impl state::State for State {
                             _ => (),
                         }
                     }
+                }
+
+                // If everything checks out, execute the slide
+                let mut stack = Vec::new();
+	            for _ in 0..grab {
+	                let piece = self.board[x][y].pop().unwrap();
+
+	                match piece {
+	                    Piece::Flatstone(color) => self.metadata.remove_flatstone(
+	                        color, x, y, self.board[x][y].len(),
+                        ),
+                        ref block => self.metadata.remove_blocking_stone(block, x, y),
+                    }
+
+                    if let Some(revealed) = self.board[x][y].last() {
+                        self.metadata.reveal_flatstone(
+                            revealed.get_color(), x, y,
+                        );
+                    }
+
+	                stack.push(piece);
+                }
+
+                self.ply_crushes.push(false);
+
+                let mut nx = x as i8;
+                let mut ny = y as i8;
+
+                for drop in drops {
+                    nx += dx;
+                    ny += dy;
+
+                    if !self.board[nx as usize][ny as usize].is_empty() {
+                        let target_top = self.board[nx as usize][ny as usize].last().unwrap().clone();
+                        match target_top {
+                            Piece::StandingStone(color) => {
+                                *self.board[nx as usize][ny as usize].last_mut().unwrap() = Piece::Flatstone(color);
+                                self.metadata.remove_blocking_stone(&Piece::StandingStone(color), nx as usize, ny as usize);
+                                self.metadata.add_flatstone(
+                                    color, nx as usize, ny as usize,
+                                    self.board[nx as usize][ny as usize].len() - 1,
+                                );
+                                *self.ply_crushes.last_mut().unwrap() = true;
+                            },
+                            _ => (),
+                        }
+                    }
 
                     for _ in 0..*drop {
-                        if let Some(covered) = next.board[nx as usize][ny as usize].last() {
-                            next.metadata.cover_flatstone(
+                        if let Some(covered) = self.board[nx as usize][ny as usize].last() {
+                            self.metadata.cover_flatstone(
                                 covered.get_color(), nx as usize, ny as usize,
                             );
                         }
@@ -175,22 +197,206 @@ impl state::State for State {
                         let piece = stack.pop().unwrap();
 
                         match piece {
-                            Piece::Flatstone(color) => next.metadata.add_flatstone(
+                            Piece::Flatstone(color) => self.metadata.add_flatstone(
                                 color, nx as usize, ny as usize,
-                                next.board[nx as usize][ny as usize].len(),
+                                self.board[nx as usize][ny as usize].len(),
                             ),
-                            ref block => next.metadata.add_blocking_stone(
+                            ref block => self.metadata.add_blocking_stone(
                                 block, nx as usize, ny as usize,
                             ),
                         }
 
-                        next.board[nx as usize][ny as usize].push(piece);
+                        self.board[nx as usize][ny as usize].push(piece);
                     }
                 }
 
-                next.metadata.calculate_road_groups();
+                self.metadata.calculate_road_groups();
             },
         }
+
+        self.ply_count += 1;
+
+        Ok(())
+    }
+
+    fn revert_ply(&mut self, ply: Option<&Ply>) -> Result<(), String> {
+        if self.ply_count == 0 {
+            return Err(String::from("No more plies to revert."));
+        }
+
+        // Null move
+        if ply.is_none() {
+            self.ply_count -= 1;
+            return Ok(())
+        }
+
+        let board_size = self.board.len();
+
+        match *ply.unwrap() {
+            Ply::Place { x, y, ref piece } => {
+                if self.board[x][y].is_empty() {
+                    return Err(String::from("Cannot remove piece from an empty space."));
+                }
+
+                if self.board[x][y].len() != 1 {
+                    return Err(String::from("Cannot remove piece from a stack."));
+                }
+
+                if self.board[x][y][0] != *piece {
+                    return Err(String::from("Top piece is the wrong piece to remove."));
+                }
+
+                let count = match *piece {
+                    Piece::Flatstone(color) |
+                    Piece::StandingStone(color) => if color == Color::White {
+                        &mut self.p1_flatstones
+                    } else {
+                        &mut self.p2_flatstones
+                    },
+                    Piece::Capstone(color) => if color == Color::White {
+                        &mut self.p1_capstones
+                    } else {
+                        &mut self.p2_capstones
+                    },
+                };
+
+                *count += 1;
+
+                self.board[x][y].pop();
+
+                match *piece {
+                    Piece::Flatstone(color) => self.metadata.remove_flatstone(
+                        color, x, y, 0,
+                    ),
+                    ref block => self.metadata.remove_blocking_stone(block, x, y),
+                }
+
+                match *piece {
+                    Piece::Flatstone(_) |
+                    Piece::Capstone(_) => self.metadata.calculate_road_groups(),
+                    _ => (),
+                }
+
+                self.ply_crushes.pop();
+            },
+            Ply::Slide { x, y, direction, ref drops } => {
+                let previous_color = if self.ply_count % 2 == 1 {
+                    Color::White
+                } else {
+                    Color::Black
+                };
+
+                let (dx, dy) = direction.to_offset();
+
+                let (tx, ty) = (
+                    x as i8 + dx * drops.len() as i8,
+                    y as i8 + dy * drops.len() as i8,
+                );
+
+                if tx < 0 || tx >= board_size as i8 ||
+                   ty < 0 || ty >= board_size as i8 {
+                    return Err(String::from("Slide out of bounds."));
+                }
+
+                if self.board[tx as usize][ty as usize].is_empty() {
+                    return Err(String::from("Target space is empty."));
+                }
+
+                if self.board[tx as usize][ty as usize].last().unwrap().get_color() != previous_color {
+                    return Err(String::from("Cannot revert move with an opponent's piece"));
+                }
+
+                if let Some(&crush) = self.ply_crushes.last() {
+                    if crush {
+                        if self.board[tx as usize][ty as usize].len() < 2 {
+                            return Err(String::from("Not enough pieces to revert standing stone crush."));
+                        }
+                        if *drops.last().unwrap() != 1 {
+                            return Err(String::from("Move crushed a standing stone, but dropped more than one stone."));
+                        }
+                    }
+                }
+
+                let grab: usize = drops.iter().sum::<u8>() as usize;
+
+                if grab > board_size {
+                    return Err(String::from("Illegal carry amount."));
+                }
+
+                let mut px = tx;
+                let mut py = ty;
+
+                for drop in drops.iter().rev() {
+                    if self.board[px as usize][py as usize].len() < *drop as usize {
+                        return Err(String::from("Insufficient pieces in stack to revert."));
+                    }
+
+                    px -= dx;
+                    py -= dy;
+                }
+
+                // If everything checks out, revert the slide
+                let mut stack = Vec::new();
+                let mut px = tx;
+                let mut py = ty;
+
+                for drop in drops.iter().rev() {
+                    for _ in 0..*drop {
+                        let piece = self.board[px as usize][py as usize].pop().unwrap();
+
+                        match piece {
+	                        Piece::Flatstone(color) => self.metadata.remove_flatstone(
+	                            color, px as usize, py as usize, self.board[px as usize][py as usize].len(),
+                            ),
+                            ref block => self.metadata.remove_blocking_stone(block, px as usize, py as usize),
+                        }
+
+                        if let Some(revealed) = self.board[px as usize][py as usize].last() {
+                            self.metadata.reveal_flatstone(revealed.get_color(), px as usize, py as usize);
+                        }
+
+                        stack.push(piece);
+                    }
+
+                    px -= dx;
+                    py -= dy;
+                }
+
+                for _ in 0..grab {
+                    if let Some(covered) = self.board[x][y].last() {
+                        self.metadata.cover_flatstone(covered.get_color(), x, y);
+                    }
+
+                    let piece = stack.pop().unwrap();
+
+                    match piece {
+                        Piece::Flatstone(color) => self.metadata.add_flatstone(
+                            color, x, y,
+                            self.board[x][y].len(),
+                        ),
+                        ref block => self.metadata.add_blocking_stone(block, x, y),
+                    }
+
+                    self.board[x][y].push(piece);
+                }
+
+                if let Some(crush) = self.ply_crushes.pop() {
+                    if crush {
+                        let color = self.board[tx as usize][ty as usize].pop().unwrap().get_color();
+                        self.board[tx as usize][ty as usize].push(Piece::StandingStone(color));
+                        self.metadata.remove_flatstone(
+                            color, tx as usize, ty as usize,
+                            self.board[tx as usize][ty as usize].len() - 1,
+                        );
+                        self.metadata.add_blocking_stone(&Piece::StandingStone(color), tx as usize, ty as usize);
+                    }
+                }
+
+                self.metadata.calculate_road_groups();
+            },
+        }
+
+        self.ply_count -= 1;
 
         Ok(())
     }

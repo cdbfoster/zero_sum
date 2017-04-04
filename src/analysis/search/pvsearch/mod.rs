@@ -19,7 +19,6 @@
 
 //! Principal Variation Search
 
-use std::cell::RefCell;
 use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
@@ -133,13 +132,12 @@ impl<S, E> PvSearch<S, E> where
 
     fn minimax(
         &mut self,
-        state: &S,
+        state: &mut S,
         principal_variation: &mut Vec<<S as State>::Ply>,
         depth: u8,
         max_depth: u8,
         mut alpha: <E as Evaluator>::Evaluation,
         beta: <E as Evaluator>::Evaluation,
-        states_preallocated: &[RefCell<S>],
         stats: &mut [StatisticsLevel],
         interrupt: Option<&Receiver<()>>,
     ) -> <E as Evaluator>::Evaluation {
@@ -172,10 +170,10 @@ impl<S, E> PvSearch<S, E> where
             }
 
             if usable {
-                if let Ok(_) = state.execute_ply_preallocated(
-                    &entry.principal_variation[0],
-                    &mut states_preallocated[search_iteration].borrow_mut(),
-                ) {
+                if state.execute_ply(Some(&entry.principal_variation[0])).is_ok() {
+                    if let Err(error) = state.revert_ply(Some(&entry.principal_variation[0])) {
+                        panic!("Error reverting state: {}", error);
+                    }
                     stats[search_iteration].tt_saves += 1;
 
                     principal_variation.clear();
@@ -202,39 +200,30 @@ impl<S, E> PvSearch<S, E> where
         let mut raised_alpha = false;
 
         for ply in ply_generator {
-            let next_state = {
-                if let Err(_) = state.execute_ply_preallocated(
-                    &ply,
-                    &mut states_preallocated[search_iteration].borrow_mut(),
-                ) {
-                    continue;
-                }
-                states_preallocated[search_iteration].borrow()
-            };
+            if state.execute_ply(Some(&ply)).is_err() {
+                continue;
+            }
 
             let next_eval = if first_iteration {
                 -self.minimax(
-                    &next_state, &mut next_principal_variation, depth - 1, max_depth,
+                    state, &mut next_principal_variation, depth - 1, max_depth,
                     -beta, -alpha,
-                    states_preallocated,
                     stats,
                     interrupt,
                 )
             } else {
                 let mut npv = next_principal_variation.clone();
                 let next_eval = -self.minimax(
-                    &next_state, &mut npv, depth - 1, max_depth,
+                    state, &mut npv, depth - 1, max_depth,
                     -alpha - <E as Evaluator>::Evaluation::epsilon(), -alpha,
-                    states_preallocated,
                     stats,
                     interrupt,
                 );
 
                 if next_eval > alpha && next_eval < beta {
                     -self.minimax(
-                        &next_state, &mut next_principal_variation, depth - 1, max_depth,
+                        state, &mut next_principal_variation, depth - 1, max_depth,
                         -beta, -alpha,
-                        states_preallocated,
                         stats,
                         interrupt,
                     )
@@ -243,6 +232,10 @@ impl<S, E> PvSearch<S, E> where
                     next_eval
                 }
             };
+
+            if let Err(error) = state.revert_ply(Some(&ply)) {
+                panic!("Error reverting state: {}", error);
+            }
 
             if next_eval > alpha {
                 alpha = next_eval;
@@ -270,10 +263,10 @@ impl<S, E> PvSearch<S, E> where
         }
 
         if let Some(ply) = principal_variation.first() {
-            if let Ok(_) = state.execute_ply_preallocated(
-                ply,
-                &mut states_preallocated[search_iteration].borrow_mut(),
-            ) {
+            if state.execute_ply(Some(ply)).is_ok() {
+                if let Err(error) = state.revert_ply(Some(ply)) {
+                    panic!("Error reverting state: {}", error);
+                }
                 self.transposition_table.insert(state.clone(),
                     TranspositionTableEntry {
                         depth: depth,
@@ -316,6 +309,7 @@ impl<S, E> Search<S> for PvSearch<S, E> where
     type Analysis = Analysis<S, E>;
 
     fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Analysis<S, E> {
+        let mut state = state.clone();
         let mut eval = <E as Evaluator>::Evaluation::null();
         let mut principal_variation = Vec::new();
         let mut statistics = Vec::new();
@@ -331,7 +325,7 @@ impl<S, E> Search<S> for PvSearch<S, E> where
         self.history.lock().unwrap().clear();
         self.interrupted = false;
 
-        let precalculated = match self.transposition_table.get(state) {
+        let precalculated = match self.transposition_table.get(&state) {
             Some(entry) => {
                 if entry.bound == Bound::Exact {
                     principal_variation.append(&mut entry.principal_variation.clone());
@@ -367,17 +361,15 @@ impl<S, E> Search<S> for PvSearch<S, E> where
         for depth in 1..max_depth + 1 - precalculated {
             let search_depth = depth + precalculated;
 
-            let states_preallocated = vec![RefCell::new(state.clone()); search_depth as usize];
             statistics.push(vec![StatisticsLevel::new(); search_depth as usize]);
 
             let start_search = Instant::now();
 
             eval = self.minimax(
-                state,
+                &mut state,
                 &mut principal_variation,
                 search_depth, search_depth,
                 <E as Evaluator>::Evaluation::min(), <E as Evaluator>::Evaluation::max(),
-                &states_preallocated,
                 &mut statistics.last_mut().unwrap(),
                 interrupt.as_ref(),
             );
@@ -393,7 +385,8 @@ impl<S, E> Search<S> for PvSearch<S, E> where
                 break;
             }
 
-            if let Ok(eval_state) = state.execute_plies(&principal_variation) {
+            let mut eval_state = state.clone();
+            if eval_state.execute_plies(&principal_variation).is_ok() {
                 if eval_state.check_resolution().is_some() {
                     break;
                 }
@@ -420,7 +413,8 @@ impl<S, E> fmt::Display for Analysis<S, E> where
     E: Evaluator<State = S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "State: {}\n", self.state));
-        if let Ok(result) = self.state.execute_plies(&self.principal_variation) {
+        let mut result = self.state.clone();
+        if result.execute_plies(&self.principal_variation).is_ok() {
             try!(write!(f, "Resultant State: {}\n", result));
             // XXX Make Resolution require Display and print the resolution if any
         }

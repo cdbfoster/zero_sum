@@ -93,33 +93,22 @@ pub trait State: Clone + Display + Eq + Hash + PartialEq {
     /// Returns the number of plies that have passed in the game.
     fn get_ply_count(&self) -> usize;
 
-    /// Executes a ply on the state, storing the resultant state in the preallocated `next`.
-    /// It is recommended to implement `Clone` on the `State` implementor manually,
-    /// to take advantage of `Clone`'s `clone_from` method in order to avoid costly
-    /// allocations during a speed-critical search.
-    fn execute_ply_preallocated(&self, ply: &Self::Ply, next: &mut Self)-> Result<(), String>;
+    /// Executes the given ply on this state.  Pass `None` to execute a null move.
+    fn execute_ply(&mut self, ply: Option<&Self::Ply>) -> Result<(), String>;
+
+    /// Reverts the given ply from the state.  Pass `None` to revert a null move.
+    fn revert_ply(&mut self, ply: Option<&Self::Ply>) -> Result<(), String>;
 
     /// Returns `None` if the game has not reached a conclusion.
     fn check_resolution(&self) -> Option<Self::Resolution>;
 
-    /// Clones the state and then calls `execute_ply_preallocated`.
-    fn execute_ply(&self, ply: &Self::Ply) -> Result<Self, String> {
-        let mut next = self.clone();
-        match self.execute_ply_preallocated(ply, &mut next) {
-            Ok(_) => Ok(next),
-            Err(error) => Err(error),
-        }
-    }
-
     /// Executes each ply in `plies` on the result of the previous ply.
-    fn execute_plies(&self, plies: &[Self::Ply]) -> Result<Self, String> {
-        let mut state = self.clone();
+    fn execute_plies(&mut self, plies: &[Self::Ply]) -> Result<(), String> {
         for ply in plies {
-            match state.execute_ply(ply) {
-                Ok(next) => state = next,
-                Err(error) => return Err(format!("Error executing plies: {}, {}", ply, error)),
+            if let Err(error) = self.execute_ply(Some(ply)) {
+                return Err(format!("Error executing plies: {}, {}", ply, error));
             }
         }
-        Ok(state)
+        Ok(())
     }
 }
