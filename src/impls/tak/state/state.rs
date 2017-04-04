@@ -21,7 +21,7 @@ use impls::tak::{Color, Piece};
 use impls::tak::ply::Ply;
 use impls::tak::resolution::Resolution;
 use impls::tak::state::State;
-use impls::tak::state::metadata::{Bitmap, BOARD, EDGE};
+use impls::tak::state::metadata::{Bitmap, BitmapInterface, BOARD, EDGE};
 use state;
 
 impl state::State for State {
@@ -446,6 +446,12 @@ impl state::State for State {
         } else {
             None
         }
+    }
+
+    fn null_move_allowed(&self) -> bool {
+        self.p1_flatstones > 3 &&
+        self.p2_flatstones > 3 &&
+        (self.metadata.p1_pieces | self.metadata.p2_pieces).get_population() < (self.board.len() * self.board.len() - 3) as u8
     }
 }
 

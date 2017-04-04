@@ -102,6 +102,12 @@ pub trait State: Clone + Display + Eq + Hash + PartialEq {
     /// Returns `None` if the game has not reached a conclusion.
     fn check_resolution(&self) -> Option<Self::Resolution>;
 
+    /// Returns true if the state is in a good place to allow the null move search optimization.
+    /// This is optional to implement, returning a default of `false`.
+    fn null_move_allowed(&self) -> bool {
+        false
+    }
+
     /// Executes each ply in `plies` on the result of the previous ply.
     fn execute_plies(&mut self, plies: &[Self::Ply]) -> Result<(), String> {
         for ply in plies {

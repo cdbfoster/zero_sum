@@ -140,6 +140,7 @@ impl<S, E> PvSearch<S, E> where
         beta: <E as Evaluator>::Evaluation,
         stats: &mut [StatisticsLevel],
         interrupt: Option<&Receiver<()>>,
+        null_move_allowed: bool,
     ) -> <E as Evaluator>::Evaluation {
         let search_iteration = (max_depth - depth) as usize;
 
@@ -184,6 +185,29 @@ impl<S, E> PvSearch<S, E> where
             }
         }
 
+        if null_move_allowed &&
+            search_iteration > 0 && depth >= 3 &&
+            state.null_move_allowed() {
+            if state.execute_ply(None).is_ok() {
+                let mut scratch = Vec::new();
+                let eval = -self.minimax(
+                    state, &mut scratch, depth - 3, max_depth,
+                    -beta, -beta + <E as Evaluator>::Evaluation::epsilon(),
+                    stats,
+                    interrupt,
+                    false,
+                );
+
+                if let Err(error) = state.revert_ply(None) {
+                    panic!("Error reverting state: {}", error);
+                }
+
+                if eval >= beta {
+                    return beta;
+                }
+            }
+        }
+
         let ply_generator = PlyGenerator::new(
             state,
             principal_variation.first().cloned(),
@@ -210,6 +234,7 @@ impl<S, E> PvSearch<S, E> where
                     -beta, -alpha,
                     stats,
                     interrupt,
+                    true,
                 )
             } else {
                 let mut npv = next_principal_variation.clone();
@@ -218,6 +243,7 @@ impl<S, E> PvSearch<S, E> where
                     -alpha - <E as Evaluator>::Evaluation::epsilon(), -alpha,
                     stats,
                     interrupt,
+                    true,
                 );
 
                 if next_eval > alpha && next_eval < beta {
@@ -226,6 +252,7 @@ impl<S, E> PvSearch<S, E> where
                         -beta, -alpha,
                         stats,
                         interrupt,
+                        true,
                     )
                 } else {
                     next_principal_variation = npv;
@@ -372,6 +399,7 @@ impl<S, E> Search<S> for PvSearch<S, E> where
                 <E as Evaluator>::Evaluation::min(), <E as Evaluator>::Evaluation::max(),
                 &mut statistics.last_mut().unwrap(),
                 interrupt.as_ref(),
+                true,
             );
 
             let elapsed_search = start_search.elapsed();
