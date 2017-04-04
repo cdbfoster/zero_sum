@@ -36,6 +36,7 @@ impl state::State for State {
         // Null move
         if ply.is_none() {
             self.ply_count += 1;
+            self.ply_crushes.push(false);
             return Ok(());
         }
 
@@ -121,14 +122,14 @@ impl state::State for State {
                 let mut nx = x as i8;
                 let mut ny = y as i8;
 
-                for drop in drops {
+                for (i, drop) in drops.iter().enumerate() {
                     nx += dx;
                     ny += dy;
 
                     if !self.board[nx as usize][ny as usize].is_empty() {
                         match *self.board[nx as usize][ny as usize].last().unwrap() {
                             Piece::Capstone(_) => return Err(String::from("Cannot slide onto a capstone.")),
-                            Piece::StandingStone(_) => if *drop == 1 {
+                            Piece::StandingStone(_) => if i == drops.len() - 1 && *drop == 1 {
                                 match *self.board[x][y].last().unwrap() {
                                     Piece::Capstone(_) => (),
                                     _ => return Err(String::from("Cannot slide onto a standing stone.")),
@@ -227,6 +228,7 @@ impl state::State for State {
         // Null move
         if ply.is_none() {
             self.ply_count -= 1;
+            self.ply_crushes.pop();
             return Ok(())
         }
 
