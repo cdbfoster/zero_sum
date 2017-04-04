@@ -261,7 +261,7 @@ impl<S, E> PvSearch<S, E> where
             };
 
             if let Err(error) = state.revert_ply(Some(&ply)) {
-                panic!("Error reverting state: {}", error);
+                panic!("Error reverting state: {}\n{}\n{:?}", error, state, ply);
             }
 
             if next_eval > alpha {
