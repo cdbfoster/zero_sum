@@ -190,10 +190,10 @@ impl AnnEvaluator {
                     let leaf_score = scale_evaluation(result.evaluation);
 
                     if !result.principal_variation.is_empty() {
-                        let mut state = match positions[i].execute_ply(&result.principal_variation[0]) {
-                            Ok(next) => next,
-                            Err(error) => panic!("Invalid principal variation: {}", error),
-                        };
+                        let mut state = positions[i].clone();
+                        if let Err(error) = state.execute_ply(Some(&result.principal_variation[0])) {
+                            panic!("Invalid principal variation: {}", error);
+                        }
 
                         let mut accumulated_error = 0.0;
                         let mut last_score = leaf_score;
@@ -216,9 +216,8 @@ impl AnnEvaluator {
                                 break;
                             }
 
-                            match state.execute_ply(&result.principal_variation[0]) {
-                                Ok(next) => state = next,
-                                Err(error) => panic!("Invalid principal variation: {}", error),
+                            if let Err(error) = state.execute_ply(Some(&result.principal_variation[0])) {
+                                panic!("Invalid principal variation: {}", error);
                             }
                         }
 
