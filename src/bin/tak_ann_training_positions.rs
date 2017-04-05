@@ -112,8 +112,16 @@ fn main() {
             let extent = labels.iter().map(|evaluation| evaluation.0.abs()).max().unwrap() as f32;
             println!("  Normalizing to {}.", extent);
 
+            let usable_range = {
+                let mut top = <AnnEvaluator as Evaluator>::Evaluation::win();
+                while top.is_win() {
+                    top = top - <AnnEvaluator as Evaluator>::Evaluation::epsilon();
+                }
+                top
+            };
+
             for label in &mut labels {
-                *label = <StaticEvaluator as Evaluator>::Evaluation::new((label.0 as f32 / extent * <AnnEvaluator as Evaluator>::Evaluation::win().0 as f32) as i32);
+                *label = <StaticEvaluator as Evaluator>::Evaluation::new((label.0 as f32 / extent * usable_range.0 as f32) as i32);
             }
         }
         println!("  Done. Labeled {} training positions.", labels.len());
