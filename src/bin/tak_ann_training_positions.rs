@@ -80,11 +80,9 @@ fn main() {
             thread_rng().shuffle(&mut next_plies);
 
             for _ in 0..samples_per_base {
-                match base.execute_ply(&next_plies.pop().unwrap()) {
-                    Ok(next) => if next.check_resolution().is_none() {
-                        states.insert(next);
-                    },
-                    Err(_) => (),
+                let mut next = base.clone();
+                if next.execute_ply(next_plies.pop().as_ref()).is_ok() && next.check_resolution().is_none() {
+                    states.insert(next);
                 }
             }
         }
@@ -145,14 +143,7 @@ struct Game {
 
 impl Game {
     fn state_at(&self, ply_number: usize) -> State {
-        let mut state = State::new(self.size);
-        for ply in self.plies[0..ply_number + 1].iter() {
-            match state.execute_ply(ply) {
-                Ok(next) => state = next,
-                Err(error) => panic!("Invalid ply: {}", error),
-            }
-        }
-        state
+        State::from_plies(self.size, &self.plies[0..ply_number + 1]).unwrap()
     }
 }
 

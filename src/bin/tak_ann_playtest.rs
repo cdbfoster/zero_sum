@@ -89,12 +89,8 @@ fn main() {
                 for _ in 0..4 {
                     let mut plies = state.extrapolate();
                     loop {
-                        match state.execute_ply(&plies.pop().unwrap()) {
-                            Ok(next) => {
-                                state = next;
-                                break;
-                            },
-                            _ => (),
+                        if state.execute_ply(Some(&plies.pop().unwrap())).is_ok() {
+                            break;
                         }
                     }
                 }
@@ -111,9 +107,8 @@ fn main() {
                         result.principal_variation[0].clone()
                     };
 
-                    match state.execute_ply(&ply) {
-                        Ok(next) => state = next,
-                        Err(error) => panic!("Illegal move: {}", error),
+                    if let Err(error) = state.execute_ply(Some(&ply)) {
+                        panic!("Illegal move: {}", error);
                     }
 
                     if let Some(resolution) = state.check_resolution() {
