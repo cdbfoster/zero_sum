@@ -17,6 +17,7 @@
 // Copyright 2016-2017 Chris Foster
 //
 
+use std::cmp;
 use std::fs::OpenOptions;
 use std::i32;
 use std::io::BufReader;
@@ -36,6 +37,10 @@ pub struct Evaluation(pub i32);
 impl Evaluation {
     pub fn new(value: i32) -> Evaluation {
         Evaluation(value)
+    }
+
+    fn clamp(&self, magnitude: i32) -> Evaluation {
+        Evaluation(cmp::max(cmp::min(self.0, magnitude), -magnitude))
     }
 }
 
@@ -135,9 +140,14 @@ impl AnnEvaluator {
             inputs[i].clone_from_slice(&gather_features(&positions[i]));
         }
 
+        // Label everything from white's point of view
         let mut targets = MatrixRm::zeros(labels.len(), 1);
         for i in 0..labels.len() {
-            targets[i].clone_from_slice(&[scale_evaluation(labels[i])]);
+            targets[i].clone_from_slice(&[if positions[i].ply_count % 2 == 0 {
+                scale_evaluation(labels[i])
+            } else {
+                -scale_evaluation(labels[i])
+            }]);
         }
 
         if let Some(error) = error {
@@ -153,7 +163,15 @@ impl AnnEvaluator {
 
     /// Use temporal difference learning to train the system through self-play.
     pub fn train_batch_tdleaf(&mut self, positions: &[State], error: Option<&mut f32>, thread_count: usize) {
-        let search_depth = 3;
+        let search_depth = 4;
+
+        let usable_range = {
+            let mut top = Evaluation::win();
+            while top.is_win() {
+                top = top - Evaluation::epsilon();
+            }
+            top
+        };
 
         let total_error = Arc::new(Mutex::new(0.0));
 
@@ -187,37 +205,46 @@ impl AnnEvaluator {
                     };
 
                     let result = search.search(&positions[i], None);
-                    let leaf_score = scale_evaluation(result.evaluation);
+                    let leaf_score = if positions[i].ply_count % 2 == 0 {
+                        1.0
+                    } else {
+                        -1.0
+                    } * scale_evaluation(result.evaluation);
 
-                    if !result.principal_variation.is_empty() {
-                        let mut state = positions[i].clone();
-                        if let Err(error) = state.execute_ply(Some(&result.principal_variation[0])) {
-                            panic!("Invalid principal variation: {}", error);
-                        }
+                    let mut state = positions[i].clone();
+                    if let Err(error) = state.execute_ply(Some(&result.principal_variation[0])) {
+                        panic!("Invalid principal variation: {}", error);
+                    }
 
+                    if state.check_resolution().is_none() {
                         let mut accumulated_error = 0.0;
                         let mut last_score = leaf_score;
-                        let mut td_discount = 0.83;
+                        let mut td_discount = 1.0;
                         let mut absolute_discount = 0.995;
 
-                        for j in 0..10 {
+                        for j in 0..12 {
                             let result = search.search(&state, None);
 
-                            let sign = if j % 2 == 0 { -1.0 } else { 1.0 };
-                            let next_score = sign * scale_evaluation(result.evaluation) * absolute_discount;
+                            if j % 2 == 1 {
+                                let next_score = if state.ply_count % 2 == 0 {
+                                    1.0
+                                } else {
+                                    -1.0
+                                } * scale_evaluation(result.evaluation.clamp(usable_range.0)) * absolute_discount;
 
-                            accumulated_error += td_discount * (next_score - last_score);
-                            td_discount *= 0.83;
-                            last_score = next_score;
+                                accumulated_error += td_discount * (next_score - last_score);
+                                td_discount *= 0.7;
+                                last_score = next_score;
+                            }
 
                             absolute_discount *= 0.995;
 
-                            if state.check_resolution().is_some() || result.principal_variation.is_empty() {
-                                break;
-                            }
-
                             if let Err(error) = state.execute_ply(Some(&result.principal_variation[0])) {
                                 panic!("Invalid principal variation: {}", error);
+                            }
+
+                            if state.check_resolution().is_some() {
+                                break;
                             }
                         }
 
@@ -227,6 +254,8 @@ impl AnnEvaluator {
                         accumulated_error = accumulated_error.max(-1.0).min(1.0);
 
                         targets.lock().unwrap()[i].clone_from_slice(&[leaf_score + accumulated_error]);
+                    } else {
+                        targets.lock().unwrap()[i].clone_from_slice(&[leaf_score]);
                     }
                 }
 
@@ -276,6 +305,10 @@ impl analysis::Evaluator for AnnEvaluator {
 
         self.ann.propagate_forward_simple(&input, &mut output);
 
-        unscale_evaluation(output.values[0])
+        if state.ply_count % 2 == 0 {
+            unscale_evaluation(output.values[0])
+        } else {
+            -unscale_evaluation(output.values[0])
+        }
     }
 }
