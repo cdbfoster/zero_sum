@@ -17,7 +17,6 @@
 // Copyright 2016-2017 Chris Foster
 //
 
-use std::cmp;
 use std::fs::OpenOptions;
 use std::i32;
 use std::io::BufReader;
@@ -37,10 +36,6 @@ pub struct Evaluation(pub i32);
 impl Evaluation {
     pub fn new(value: i32) -> Evaluation {
         Evaluation(value)
-    }
-
-    fn clamp(&self, magnitude: i32) -> Evaluation {
-        Evaluation(cmp::max(cmp::min(self.0, magnitude), -magnitude))
     }
 }
 
@@ -165,14 +160,6 @@ impl AnnEvaluator {
     pub fn train_batch_tdleaf(&mut self, positions: &[State], error: Option<&mut f32>, thread_count: usize) {
         let search_depth = 4;
 
-        let usable_range = {
-            let mut top = Evaluation::win();
-            while top.is_win() {
-                top = top - Evaluation::epsilon();
-            }
-            top
-        };
-
         let total_error = Arc::new(Mutex::new(0.0));
 
         let mut inputs = MatrixRm::zeros(positions.len(), 339);
@@ -230,7 +217,7 @@ impl AnnEvaluator {
                                     1.0
                                 } else {
                                     -1.0
-                                } * scale_evaluation(result.evaluation.clamp(usable_range.0)) * absolute_discount;
+                                } * scale_evaluation(result.evaluation) * absolute_discount;
 
                                 accumulated_error += td_discount * (next_score - last_score);
                                 td_discount *= 0.7;
