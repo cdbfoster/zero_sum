@@ -113,7 +113,7 @@ fn main() {
             println!("  Normalizing to {}.", extent);
 
             for label in &mut labels {
-                *label = <StaticEvaluator as Evaluator>::Evaluation::new((label.0 as f32 / extent * <AnnEvaluator as Evaluator>::Evaluation::win().0 as f32) as i32);
+                *label = <AnnEvaluator as Evaluator>::Evaluation::new(label.0 as f32 / extent * 0.999);
             }
         }
         println!("  Done. Labeled {} training positions.", labels.len());

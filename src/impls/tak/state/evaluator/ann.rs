@@ -17,9 +17,10 @@
 // Copyright 2016-2017 Chris Foster
 //
 
+use std::f32;
 use std::fs::OpenOptions;
-use std::i32;
 use std::io::BufReader;
+use std::mem;
 use std::sync::{Arc, mpsc, Mutex};
 use std::thread;
 
@@ -31,30 +32,44 @@ use impls::tak::state::ann::*;
 use state::State as StateTrait;
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub struct Evaluation(pub i32);
+pub struct Evaluation(pub f32);
 
 impl Evaluation {
-    pub fn new(value: i32) -> Evaluation {
+    pub fn new(value: f32) -> Evaluation {
         Evaluation(value)
     }
 }
 
 prepare_evaluation_tuple!(Evaluation);
 
+const USABLE_RANGE: f32 = 0.999;
+
 impl analysis::Evaluation for Evaluation {
-    fn null() -> Evaluation { Evaluation(0) }
-    fn epsilon() -> Evaluation { Evaluation(1) }
-    fn win() -> Evaluation { Evaluation(100_000) }
-    fn max() -> Evaluation { Evaluation(i32::MAX) }
-    fn is_win(&self) -> bool { self.0 >= 99_000 }
+    fn null() -> Evaluation { Evaluation(0.0) }
+    fn shift(self, steps: i32) -> Evaluation {
+        let mut result = self.0;
+        if steps < 0 {
+            for _ in 0..steps.abs() {
+                result = previous_f32(result);
+            }
+        } else {
+            for _ in 0..steps {
+                result = next_f32(result);
+            }
+        }
+        Evaluation(result)
+    }
+    fn win() -> Evaluation { Evaluation(1.0) }
+    fn max() -> Evaluation { Evaluation(f32::MAX) }
+    fn is_win(&self) -> bool { self.0 > USABLE_RANGE }
 }
 
 fn scale_evaluation(evaluation: Evaluation) -> f32 {
-    evaluation.0 as f32 / Evaluation::win().0 as f32
+    evaluation.0.min(USABLE_RANGE).max(-USABLE_RANGE) / USABLE_RANGE
 }
 
 fn unscale_evaluation(evaluation: f32) -> Evaluation {
-    Evaluation((evaluation * Evaluation::win().0 as f32) as i32)
+    Evaluation(evaluation * USABLE_RANGE)
 }
 
 #[derive(Clone)]
@@ -278,9 +293,9 @@ impl analysis::Evaluator for AnnEvaluator {
             Some(Resolution::Road(win_color)) |
             Some(Resolution::Flat(win_color)) => {
                 if win_color == next_color {
-                    return Evaluation::win() - Evaluation(state.ply_count as i32);
+                    return Evaluation::win().shift(-(state.ply_count as i32));
                 } else {
-                    return -Evaluation::win() + Evaluation(state.ply_count as i32);
+                    return Evaluation::lose().shift(state.ply_count as i32);
                 }
             },
             Some(Resolution::Draw) => return Evaluation::null(),
@@ -298,4 +313,84 @@ impl analysis::Evaluator for AnnEvaluator {
             -unscale_evaluation(output.values[0])
         }
     }
+}
+
+fn decompose_f32(x: f32) -> (u8, u8, u32) {
+    let bits: u32 = unsafe { mem::transmute(x) };
+    let sign = ((bits & 0x80000000) >> 31) as u8;
+    let exponent = ((bits & 0x7F800000) >> 23) as u8;
+    let mantissa = bits & 0x7FFFFF;
+    (sign, exponent, mantissa)
+}
+
+fn compose_f32(sign: u8, exponent: u8, mantissa: u32) -> f32 {
+    unsafe {
+        mem::transmute(
+            ((sign as u32) << 31) |
+            ((exponent as u32) << 23) |
+            (mantissa & 0x7FFFFF)
+        )
+    }
+}
+
+fn previous_f32(x: f32) -> f32 {
+    let (mut sign, mut exponent, mut mantissa) = decompose_f32(x);
+
+    if exponent != 0 {
+        if sign == 0 {
+            if mantissa != 0 {
+                mantissa -= 1;
+            } else {
+                mantissa = 0x7FFFFF;
+                exponent -= 1;
+                if exponent == 0 {
+                    mantissa = 0;
+                }
+            }
+        } else {
+            if mantissa != 0x7FFFFF {
+                mantissa += 1;
+            } else {
+                mantissa = 0;
+                exponent += 1;
+            }
+        }
+    } else {
+        sign = 1;
+        mantissa = 0;
+        exponent = 1;
+    }
+
+    compose_f32(sign, exponent, mantissa)
+}
+
+fn next_f32(x: f32) -> f32 {
+    let (mut sign, mut exponent, mut mantissa) = decompose_f32(x);
+
+    if exponent != 0 {
+        if sign == 0 {
+            if mantissa != 0x7FFFFF {
+                mantissa += 1;
+            } else {
+                mantissa = 0;
+                exponent += 1;
+            }
+        } else {
+            if mantissa != 0 {
+                mantissa -= 1;
+            } else {
+                mantissa = 0x7FFFFF;
+                exponent -= 1;
+                if exponent == 0 {
+                    mantissa = 0;
+                }
+            }
+        }
+    } else {
+        sign = 0;
+        mantissa = 0;
+        exponent = 1;
+    }
+
+    compose_f32(sign, exponent, mantissa)
 }

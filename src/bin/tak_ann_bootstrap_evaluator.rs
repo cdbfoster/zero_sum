@@ -55,7 +55,7 @@ fn main() {
     println!("Reading labels...");
     let labels = if let Ok(file) = OpenOptions::new().read(true).open(&labels_file) {
         let reader = BufReader::new(file);
-        reader.lines().map(|line| <AnnEvaluator as Evaluator>::Evaluation::new(i32::from_str(line.unwrap().trim()).unwrap())).collect::<Vec<_>>()
+        reader.lines().map(|line| <AnnEvaluator as Evaluator>::Evaluation::new(f32::from_str(line.unwrap().trim()).unwrap())).collect::<Vec<_>>()
     } else {
         panic!("Cannot read file: {}", labels_file);
     };

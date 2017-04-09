@@ -66,8 +66,8 @@ pub trait Evaluation:
     PartialOrd {
     /// An empty, or zero evaluation.
     fn null() -> Self;
-    /// The smallest step to consider.
-    fn epsilon() -> Self;
+    /// Shift the evaluation by the smallest representable amount `steps` times.
+    fn shift(self, steps: i32) -> Self;
     /// The base value of a win.  The evaluator may add or subtract to it in
     /// in order to promote it or discourage it in favor of others in the search.
     fn win() -> Self;

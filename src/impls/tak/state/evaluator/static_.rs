@@ -40,7 +40,7 @@ prepare_evaluation_tuple!(Evaluation);
 
 impl analysis::Evaluation for Evaluation {
     fn null() -> Evaluation { Evaluation(0) }
-    fn epsilon() -> Evaluation { Evaluation(1) }
+    fn shift(self, steps: i32) -> Evaluation { Evaluation(self.0 + steps) }
     fn win() -> Evaluation { Evaluation(100_000) }
     fn max() -> Evaluation { Evaluation(i32::MAX) }
     fn is_win(&self) -> bool { self.0 >= 99_000 }
@@ -100,9 +100,9 @@ impl analysis::Evaluator for StaticEvaluator {
             Some(Resolution::Road(win_color)) |
             Some(Resolution::Flat(win_color)) => {
                 if win_color == next_color {
-                    return Evaluation::win() - Evaluation(state.ply_count as i32);
+                    return Evaluation::win().shift(-(state.ply_count as i32));
                 } else {
-                    return -Evaluation::win() + Evaluation(state.ply_count as i32);
+                    return Evaluation::lose().shift(state.ply_count as i32);
                 }
             },
             Some(Resolution::Draw) => return Evaluation::null(),

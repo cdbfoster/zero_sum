@@ -192,7 +192,7 @@ impl<S, E> PvSearch<S, E> where
                 let mut scratch = Vec::new();
                 let eval = -self.minimax(
                     state, &mut scratch, depth - 3, max_depth,
-                    -beta, -beta + <E as Evaluator>::Evaluation::epsilon(),
+                    -beta, (-beta).shift(1),
                     stats,
                     interrupt,
                     false,
@@ -240,7 +240,7 @@ impl<S, E> PvSearch<S, E> where
                 let mut npv = next_principal_variation.clone();
                 let next_eval = -self.minimax(
                     state, &mut npv, depth - 1, max_depth,
-                    -alpha - <E as Evaluator>::Evaluation::epsilon(), -alpha,
+                    (-alpha).shift(-1), -alpha,
                     stats,
                     interrupt,
                     true,
