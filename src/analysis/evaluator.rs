@@ -66,7 +66,7 @@ pub trait Evaluation:
     PartialOrd {
     /// An empty, or zero evaluation.
     fn null() -> Self;
-    /// Shift the evaluation by the smallest representable amount `steps` times.
+    /// Shift the evaluation by the smallest representable amount `steps` times in the positive or negative direction.
     fn shift(self, steps: i32) -> Self;
     /// The base value of a win.  The evaluator may add or subtract to it in
     /// in order to promote it or discourage it in favor of others in the search.
