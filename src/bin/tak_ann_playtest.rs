@@ -34,7 +34,7 @@ fn main() {
     let network_file = String::from("evaluator");
     let games = 50;
     let threads = 4;
-    let search_depth = 3;
+    let search_depth = 5;
 
     let ann_evaluator = if let Ok(evaluator) = AnnEvaluator::from_file(&format!("{}", &network_file)) {
         evaluator
