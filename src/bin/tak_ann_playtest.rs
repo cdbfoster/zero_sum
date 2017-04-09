@@ -26,7 +26,7 @@ use zero_sum::analysis::Extrapolatable;
 use zero_sum::analysis::search::Search;
 use zero_sum::analysis::search::pvsearch::PvSearch;
 use zero_sum::impls::tak::evaluator::{AnnEvaluator, StaticEvaluator};
-use zero_sum::impls::tak::{Resolution, State};
+use zero_sum::impls::tak::{Piece, Ply, Resolution, State};
 use zero_sum::Resolution as ResolutionTrait;
 use zero_sum::State as StateTrait;
 
@@ -89,8 +89,12 @@ fn main() {
                 for _ in 0..4 {
                     let mut plies = state.extrapolate();
                     loop {
-                        if state.execute_ply(Some(&plies.pop().unwrap())).is_ok() {
-                            break;
+                        let ply = plies.pop().unwrap();
+                        match ply {
+                            Ply::Place { piece: Piece::Flatstone(_), .. } => if state.execute_ply(Some(&ply)).is_ok() {
+                                break;
+                            },
+                            _ => (),
                         }
                     }
                 }
