@@ -19,6 +19,8 @@
 
 extern crate zero_sum;
 
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::sync::{Arc, mpsc, Mutex};
 use std::thread;
 
@@ -31,154 +33,175 @@ use zero_sum::Resolution as ResolutionTrait;
 use zero_sum::State as StateTrait;
 
 fn main() {
-    let network_file = String::from("evaluator");
-    let games = 50;
-    let threads = 4;
-    let search_depth = 5;
+    let start_iteration = 0;
+    let interval = 100;
 
-    let ann_evaluator = if let Ok(evaluator) = AnnEvaluator::from_file(&format!("{}", &network_file)) {
-        evaluator
-    } else {
-        panic!("Cannot read network file: {}", network_file);
-    };
+    for iteration in (0..).map(|x| start_iteration + x * interval) {
+        let network_file = format!("evaluator_{:06}", iteration);
+        let games = 64;
+        let threads = 4;
+        let search_depth = 5;
 
-    let static_evaluator = StaticEvaluator;
+        let ann_evaluator = if let Ok(evaluator) = AnnEvaluator::from_file(&network_file) {
+            evaluator
+        } else {
+            panic!("Cannot read network file: {}", network_file);
+        };
 
-    let ann_wins = Arc::new(Mutex::new(0));
-    let static_wins = Arc::new(Mutex::new(0));
-    let white_wins = Arc::new(Mutex::new(0));
-    let black_wins = Arc::new(Mutex::new(0));
-    let road_wins = Arc::new(Mutex::new(0));
-    let flat_wins = Arc::new(Mutex::new(0));
-    let draws = Arc::new(Mutex::new(0));
-    let loops = Arc::new(Mutex::new(0));
+        let static_evaluator = StaticEvaluator;
 
-    let remaining = Arc::new(Mutex::new(games));
-    let (finished_sender, finished_receiver) = mpsc::channel();
+        let ann_wins = Arc::new(Mutex::new(0));
+        let static_wins = Arc::new(Mutex::new(0));
+        let white_wins = Arc::new(Mutex::new(0));
+        let black_wins = Arc::new(Mutex::new(0));
+        let road_wins = Arc::new(Mutex::new(0));
+        let flat_wins = Arc::new(Mutex::new(0));
+        let draws = Arc::new(Mutex::new(0));
+        let loops = Arc::new(Mutex::new(0));
 
-    for thread in 0..threads {
-        let ann_wins = ann_wins.clone();
-        let static_wins = static_wins.clone();
-        let white_wins = white_wins.clone();
-        let black_wins = black_wins.clone();
-        let road_wins = road_wins.clone();
-        let flat_wins = flat_wins.clone();
-        let draws = draws.clone();
-        let loops = loops.clone();
+        let remaining = Arc::new(Mutex::new(games));
+        let (finished_sender, finished_receiver) = mpsc::channel();
 
-        let ann_evaluator = ann_evaluator.clone();
-        let static_evaluator = static_evaluator.clone();
+        for thread in 0..threads {
+            let ann_wins = ann_wins.clone();
+            let static_wins = static_wins.clone();
+            let white_wins = white_wins.clone();
+            let black_wins = black_wins.clone();
+            let road_wins = road_wins.clone();
+            let flat_wins = flat_wins.clone();
+            let draws = draws.clone();
+            let loops = loops.clone();
 
-        let remaining = remaining.clone();
-        let finished_sender = finished_sender.clone();
+            let ann_evaluator = ann_evaluator.clone();
+            let static_evaluator = static_evaluator.clone();
 
-        thread::spawn(move || {
-            loop {
-                let game = {
-                    let mut remaining = remaining.lock().unwrap();
-                    if *remaining == 0 {
-                        break;
-                    }
-                    *remaining -= 1;
-                    games - *remaining
-                };
+            let remaining = remaining.clone();
+            let finished_sender = finished_sender.clone();
 
-                println!("Thread {}: Start game {}", thread, game);
-
-                let mut state = State::new(5);
-                for _ in 0..4 {
-                    let mut plies = state.extrapolate();
-                    loop {
-                        let ply = plies.pop().unwrap();
-                        match ply {
-                            Ply::Place { piece: Piece::Flatstone(_), .. } => if state.execute_ply(Some(&ply)).is_ok() {
-                                break;
-                            },
-                            _ => (),
-                        }
-                    }
-                }
-
-                let mut ann_search = PvSearch::with_depth(ann_evaluator.clone(), search_depth);
-                let mut static_search = PvSearch::with_depth(static_evaluator.clone(), search_depth);
-
+            thread::spawn(move || {
                 loop {
-                    let ply = if (game + state.ply_count) % 2 == 0 {
-                        let result = ann_search.search(&state, None);
-                        result.principal_variation[0].clone()
-                    } else {
-                        let result = static_search.search(&state, None);
-                        result.principal_variation[0].clone()
+                    let game = {
+                        let mut remaining = remaining.lock().unwrap();
+                        if *remaining == 0 {
+                            break;
+                        }
+                        *remaining -= 1;
+                        games - *remaining
                     };
 
-                    if let Err(error) = state.execute_ply(Some(&ply)) {
-                        panic!("Illegal move: {}", error);
-                    }
+                    println!("Thread {}: Start game {}", thread, game);
 
-                    if let Some(resolution) = state.check_resolution() {
-                        if let Some(winner) = resolution.get_winner() {
-                            println!("Thread {}: Game {}: {} wins. {:?}", thread, game,
-                                if (game + winner as u16) % 2 == 0 {
-                                    *ann_wins.lock().unwrap() += 1;
-                                    "ANN"
-                                } else {
-                                    *static_wins.lock().unwrap() += 1;
-                                    "Static"
+                    let mut state = State::new(5);
+                    for _ in 0..4 {
+                        let mut plies = state.extrapolate();
+                        loop {
+                            let ply = plies.pop().unwrap();
+                            match ply {
+                                Ply::Place { piece: Piece::Flatstone(_), .. } => if state.execute_ply(Some(&ply)).is_ok() {
+                                    break;
                                 },
-                                resolution,
-                            );
-
-                            if winner == 0 {
-                                *white_wins.lock().unwrap() += 1;
-                            } else {
-                                *black_wins.lock().unwrap() += 1;
+                                _ => (),
                             }
-                        } else {
-                            println!("Thread {}: Game {}: Draw.", thread, game);
-                            *draws.lock().unwrap() += 1;
                         }
-
-                        match resolution {
-                            Resolution::Road(_) => *road_wins.lock().unwrap() += 1,
-                            Resolution::Flat(_) => *flat_wins.lock().unwrap() += 1,
-                            _ => (),
-                        }
-
-                        break;
                     }
 
-                    if state.ply_count > 150 {
-                        println!("Thread {}: Game {}: Loop.", thread, game);
-                        *loops.lock().unwrap() += 1;
-                        break;
+                    let mut ann_search = PvSearch::with_depth(ann_evaluator.clone(), search_depth);
+                    let mut static_search = PvSearch::with_depth(static_evaluator.clone(), search_depth);
+
+                    loop {
+                        let ply = if (game + state.ply_count) % 2 == 0 {
+                            let result = ann_search.search(&state, None);
+                            result.principal_variation[0].clone()
+                        } else {
+                            let result = static_search.search(&state, None);
+                            result.principal_variation[0].clone()
+                        };
+
+                        if let Err(error) = state.execute_ply(Some(&ply)) {
+                            panic!("Illegal move: {}", error);
+                        }
+
+                        if let Some(resolution) = state.check_resolution() {
+                            if let Some(winner) = resolution.get_winner() {
+                                println!("Thread {}: Game {}: {} wins. {:?}", thread, game,
+                                    if (game + winner as u16) % 2 == 0 {
+                                        *ann_wins.lock().unwrap() += 1;
+                                        "ANN"
+                                    } else {
+                                        *static_wins.lock().unwrap() += 1;
+                                        "Static"
+                                    },
+                                    resolution,
+                                );
+
+                                if winner == 0 {
+                                    *white_wins.lock().unwrap() += 1;
+                                } else {
+                                    *black_wins.lock().unwrap() += 1;
+                                }
+                            } else {
+                                println!("Thread {}: Game {}: Draw.", thread, game);
+                                *draws.lock().unwrap() += 1;
+                            }
+
+                            match resolution {
+                                Resolution::Road(_) => *road_wins.lock().unwrap() += 1,
+                                Resolution::Flat(_) => *flat_wins.lock().unwrap() += 1,
+                                _ => (),
+                            }
+
+                            break;
+                        }
+
+                        if state.ply_count > 150 {
+                            println!("Thread {}: Game {}: Loop.", thread, game);
+                            *loops.lock().unwrap() += 1;
+                            break;
+                        }
                     }
                 }
-            }
 
-            finished_sender.send(()).ok();
-        });
+                finished_sender.send(()).ok();
+            });
+        }
+
+        for _ in 0..threads {
+            finished_receiver.recv().ok();
+        }
+
+        println!("");
+
+        let ann_wins = *ann_wins.lock().unwrap();
+        let static_wins = *static_wins.lock().unwrap();
+        let white_wins = *white_wins.lock().unwrap();
+        let black_wins = *black_wins.lock().unwrap();
+        let road_wins = *road_wins.lock().unwrap();
+        let flat_wins = *flat_wins.lock().unwrap();
+        let draws = *draws.lock().unwrap();
+        let loops = *loops.lock().unwrap();
+        println!("ANN wins:    {:3} / {:3} {:6.2}%", ann_wins, games, ann_wins as f32 / games as f32 * 100.0);
+        println!("Static wins: {:3} / {:3} {:6.2}%", static_wins, games, static_wins as f32 / games as f32 * 100.0);
+        println!("White wins:  {:3} / {:3} {:6.2}%", white_wins, games, white_wins as f32 / games as f32 * 100.0);
+        println!("Black wins:  {:3} / {:3} {:6.2}%", black_wins, games, black_wins as f32 / games as f32 * 100.0);
+        println!("Road wins:   {:3} / {:3} {:6.2}%", road_wins, games, road_wins as f32 / games as f32 * 100.0);
+        println!("Flat wins:   {:3} / {:3} {:6.2}%", flat_wins, games, flat_wins as f32 / games as f32 * 100.0);
+        println!("Draws:       {:3} / {:3} {:6.2}%", draws, games, draws as f32 / games as f32 * 100.0);
+        println!("Loops:       {:3} / {:3} {:6.2}%", loops, games, loops as f32 / games as f32 * 100.0);
+
+        if let Ok(mut file) = OpenOptions::new().append(true).create(true).open("playtests") {
+            write!(&mut file, "{:>6} {:>2} {:>2} {:>2} {:>2} {:>2} {:>2} {:>2} {:>2}\n",
+                iteration,
+                ann_wins,
+                static_wins,
+                white_wins,
+                black_wins,
+                road_wins,
+                flat_wins,
+                draws,
+                loops,
+            ).ok();
+        } else {
+            println!("Cannot write file: playtests");
+        }
     }
-
-    for _ in 0..threads {
-        finished_receiver.recv().ok();
-    }
-
-    println!("");
-
-    let ann_wins = *ann_wins.lock().unwrap();
-    let static_wins = *static_wins.lock().unwrap();
-    let white_wins = *white_wins.lock().unwrap();
-    let black_wins = *black_wins.lock().unwrap();
-    let road_wins = *road_wins.lock().unwrap();
-    let flat_wins = *flat_wins.lock().unwrap();
-    let draws = *draws.lock().unwrap();
-    let loops = *loops.lock().unwrap();
-    println!("ANN wins:    {:3} / {:3} {:6.2}%", ann_wins, games, ann_wins as f32 / games as f32 * 100.0);
-    println!("Static wins: {:3} / {:3} {:6.2}%", static_wins, games, static_wins as f32 / games as f32 * 100.0);
-    println!("White wins:  {:3} / {:3} {:6.2}%", white_wins, games, white_wins as f32 / games as f32 * 100.0);
-    println!("Black wins:  {:3} / {:3} {:6.2}%", black_wins, games, black_wins as f32 / games as f32 * 100.0);
-    println!("Road wins:   {:3} / {:3} {:6.2}%", road_wins, games, road_wins as f32 / games as f32 * 100.0);
-    println!("Flat wins:   {:3} / {:3} {:6.2}%", flat_wins, games, flat_wins as f32 / games as f32 * 100.0);
-    println!("Draws:       {:3} / {:3} {:6.2}%", draws, games, draws as f32 / games as f32 * 100.0);
-    println!("Loops:       {:3} / {:3} {:6.2}%", loops, games, loops as f32 / games as f32 * 100.0);
 }
