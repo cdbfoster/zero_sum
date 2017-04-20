@@ -409,23 +409,3 @@ mod ann;
 mod extrapolation;
 mod metadata;
 mod state;
-
-#[cfg(test)]
-mod test {
-    use std::hash::Hash;
-
-    use fnv::FnvHasher;
-    use test::{self, Bencher};
-
-    use super::*;
-
-    #[bench]
-    fn bench_state_hash(b: &mut Bencher) {
-        let state = State::from_tps("[TPS \"21,22221C,1,12212S,x/2121,2S,2,1S,2/x2,2,2,x/1,2111112C,2,x,21/x,1,21,x2 1 32\"]").unwrap();
-        let mut hasher = FnvHasher::default();
-
-        b.iter(|| {
-            state.hash(test::black_box(&mut hasher))
-        });
-    }
-}

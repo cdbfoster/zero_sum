@@ -83,31 +83,3 @@ impl<X, P> Iterator for PlyGenerator<X, P> where
         }
     }
 }
-
-#[cfg(all(test, feature = "with_tak"))]
-mod test_tak {
-    use test::Bencher;
-
-    use super::PlyGenerator;
-    use analysis::search::Search;
-    use analysis::search::pvsearch::PvSearch;
-    use impls::tak::*;
-
-    #[bench]
-    #[ignore]
-    fn bench_ply_generator_drain(b: &mut Bencher) {
-        let evaluator = evaluator::StaticEvaluator;
-        let mut search = PvSearch::with_depth(evaluator, 5);
-        let state = State::new(5);
-        search.search(&state, None);
-
-        b.iter(|| {
-            let mut r = Ply::Place { x: 0, y: 0, piece: Piece::Flatstone(Color::White) };
-            let ply_generator = PlyGenerator::new(&state, None, search.history.clone());
-            for ply in ply_generator {
-                r = ply;
-            }
-            r
-        });
-    }
-}
