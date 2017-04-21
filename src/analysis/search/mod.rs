@@ -33,4 +33,6 @@ pub trait Search<S> where
     fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Self::Analysis;
 }
 
-pub mod pvsearch;
+pub use self::pvsearch::PvSearch;
+
+mod pvsearch;

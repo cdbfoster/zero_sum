@@ -25,8 +25,7 @@ use std::sync::{Arc, mpsc, Mutex};
 use std::thread;
 
 use analysis::{self, Evaluation as EvaluationTrait};
-use analysis::search::Search;
-use analysis::search::pvsearch::PvSearch;
+use analysis::search::{PvSearch, Search};
 use impls::tak::{Color, Resolution, State};
 use impls::tak::state::ann::*;
 use state::State as StateTrait;

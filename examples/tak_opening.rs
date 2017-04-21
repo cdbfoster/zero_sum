@@ -25,7 +25,7 @@ use zero_sum::impls::tak::*;
 fn main() {
     let state = State::new(5);
     let evaluator = evaluator::StaticEvaluator;
-    let mut search = zero_sum::analysis::search::pvsearch::PvSearch::with_goal(evaluator, 60, 12.0);
+    let mut search = zero_sum::analysis::search::PvSearch::with_goal(evaluator, 60, 12.0);
 
     println!("Searching for opening move...");
 
