@@ -87,9 +87,8 @@ fn main() {
                 ai.search(&board, None).principal_variation[0].clone()
             };
 
-            match board.execute_ply(&ply) {
-                Ok(next) => board = next,
-                Err(error) => println!("Error: {}", error),
+            if let Err(error) = board.execute_ply(Some(&ply)) {
+                println!("Error: {}", error);
             }
         }
 

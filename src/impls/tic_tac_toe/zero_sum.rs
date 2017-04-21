@@ -49,7 +49,14 @@ impl state::State for Board {
         self.1 as usize
     }
 
-    fn execute_ply_preallocated(&self, ply: &Ply, next: &mut Board) -> Result<(), String> {
+    fn execute_ply(&mut self, ply: Option<&Ply>) -> Result<(), String> {
+        let ply = if let Some(ply) = ply {
+            ply
+        } else {
+            self.1 += 1;
+            return Ok(());
+        };
+
         if ply.coordinates.0 >= 3 || ply.coordinates.1 >= 3 {
             return Err(String::from("Coordinates out of bounds"));
         }
@@ -60,9 +67,35 @@ impl state::State for Board {
             return Err(String::from("Space already occupied"));
         }
 
-        next.0 = self.0;
-        next.0[index] = Some(ply.mark);
-        next.1 = self.1 + 1;
+        self.0[index] = Some(ply.mark);
+        self.1 += 1;
+        Ok(())
+    }
+
+    fn revert_ply(&mut self, ply: Option<&Ply>) -> Result<(), String> {
+        let ply = if let Some(ply) = ply {
+            ply
+        } else {
+            self.1 -= 1;
+            return Ok(());
+        };
+
+        if ply.coordinates.0 >= 3 || ply.coordinates.1 >= 3 {
+            return Err(String::from("Coordinates out of bounds"));
+        }
+
+        let index = ply.coordinates.0 + 3 * ply.coordinates.1;
+
+        if self.0[index].is_none() {
+            return Err(String::from("Space is empty"));
+        }
+
+        if self.0[index] != Some(ply.mark) {
+            return Err(String::from("Space has the wrong mark"));
+        }
+
+        self.0[index] = None;
+        self.1 -= 1;
         Ok(())
     }
 
@@ -114,7 +147,7 @@ prepare_evaluation_tuple!(Evaluation); // Implements arithmetic operators and di
 
 impl analysis::Evaluation for Evaluation {
     fn null() -> Evaluation { Evaluation(0) }
-    fn epsilon() -> Evaluation { Evaluation(1) }
+    fn shift(self, steps: i32) -> Evaluation { Evaluation(self.0 + steps as i8) }
     fn win() -> Evaluation { Evaluation(14) }
     fn max() -> Evaluation { Evaluation(i8::MAX) }
     fn is_win(&self) -> bool { self.0 >= 5 }
