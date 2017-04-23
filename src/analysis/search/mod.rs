@@ -19,20 +19,24 @@
 
 //! Tools for searching the game tree.
 
+use std::any::Any;
+use std::fmt::Display;
 use std::sync::mpsc::Receiver;
 
 use analysis::Extrapolatable;
 use state::State;
 
+pub trait Analysis: Display {
+    fn as_any(&self) -> &Any;
+}
+
 /// Provides search capabilities.
 pub trait Search<S> where
     S: State + Extrapolatable<<S as State>::Ply> {
-    type Analysis;
-
     /// Generates an analysis of `state`.  `interrupt` is optionally provided to interrupt long searches.
-    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Self::Analysis;
+    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Box<Analysis>;
 }
 
-pub use self::pvsearch::PvSearch;
+pub use self::pvsearch::{PvSearch, PvSearchAnalysis};
 
 mod pvsearch;

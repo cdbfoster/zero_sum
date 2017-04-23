@@ -19,6 +19,7 @@
 
 //! Principal Variation Search
 
+use std::any::Any;
 use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
@@ -26,7 +27,7 @@ use std::time::Instant;
 use std::u8;
 
 use analysis::{Evaluation, Evaluator, Extrapolatable};
-use analysis::search::Search;
+use analysis::search::{Analysis, Search};
 use state::State;
 
 use self::history::History;
@@ -34,7 +35,7 @@ use self::ply_generator::PlyGenerator;
 use self::transposition_table::{Bound, TranspositionTable, TranspositionTableEntry};
 
 /// The results of the search.
-pub struct Analysis<S, E> where
+pub struct PvSearchAnalysis<S, E> where
     S: State + Extrapolatable<<S as State>::Ply>,
     E: Evaluator<State = S> {
     /// The state on which the search was performed.
@@ -331,11 +332,9 @@ impl<S, E> PvSearch<S, E> where
 }
 
 impl<S, E> Search<S> for PvSearch<S, E> where
-    S: State + Extrapolatable<<S as State>::Ply>,
-    E: Evaluator<State = S> {
-    type Analysis = Analysis<S, E>;
-
-    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Analysis<S, E> {
+    S: 'static + State + Extrapolatable<<S as State>::Ply>,
+    E: 'static + Evaluator<State = S> {
+    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Box<Analysis> {
         let mut state = state.clone();
         let mut eval = <E as Evaluator>::Evaluation::null();
         let mut principal_variation = Vec::new();
@@ -425,18 +424,18 @@ impl<S, E> Search<S> for PvSearch<S, E> where
             }
         }
 
-        Analysis {
+        Box::new(PvSearchAnalysis::<S, E> {
             state: state.clone(),
             evaluation: eval,
             principal_variation: principal_variation,
             statistics: Statistics {
                 depth: statistics,
             },
-        }
+        })
     }
 }
 
-impl<S, E> fmt::Display for Analysis<S, E> where
+impl<S, E> fmt::Display for PvSearchAnalysis<S, E> where
     S: State + Extrapolatable<<S as State>::Ply>,
     E: Evaluator<State = S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -461,6 +460,14 @@ impl<S, E> fmt::Display for Analysis<S, E> where
         }
         try!(write!(f, "\nStatistics:\n{}", self.statistics));
         Ok(())
+    }
+}
+
+impl<S, E> Analysis for PvSearchAnalysis<S, E> where
+    S: 'static + State + Extrapolatable<<S as State>::Ply>,
+    E: 'static + Evaluator<State = S> {
+    fn as_any(&self) -> &Any {
+        self
     }
 }
 
