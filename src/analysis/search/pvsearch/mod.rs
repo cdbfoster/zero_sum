@@ -34,7 +34,7 @@ use self::history::History;
 use self::ply_generator::PlyGenerator;
 use self::transposition_table::{Bound, TranspositionTable, TranspositionTableEntry};
 
-/// The results of the search.
+/// The results of the PV search.
 pub struct PvSearchAnalysis<S, E> where
     S: State + Extrapolatable<<S as State>::Ply>,
     E: Evaluator<State = S> {
@@ -54,12 +54,11 @@ pub struct PvSearchAnalysis<S, E> where
 ///
 /// ```rust
 /// # #[macro_use] extern crate zero_sum;
-/// # use zero_sum::analysis::search::Search;
-/// # use zero_sum::analysis::search::pvsearch::PvSearch;
+/// # use zero_sum::analysis::search::{PvSearch, Search};
 /// # use std::ops::{Add, Div, Mul, Neg, Sub};
 /// # #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)] struct Eval(i8);
 /// # prepare_evaluation_tuple!(Eval);
-/// # impl zero_sum::analysis::Evaluation for Eval { fn null() -> Eval { Eval(0) } fn epsilon() -> Eval { Eval(0) } fn win() -> Eval { Eval(0) } fn max() -> Eval { Eval(0) } fn is_win(&self) -> bool { false } }
+/// # impl zero_sum::analysis::Evaluation for Eval { fn null() -> Eval { Eval(0) } fn shift(self, _: i32) -> Eval { Eval(0) } fn win() -> Eval { Eval(0) } fn max() -> Eval { Eval(0) } fn is_win(&self) -> bool { false } }
 /// # #[derive(Clone, Debug, Hash, PartialEq)] struct Ply(i8);
 /// # impl zero_sum::Ply for Ply { }
 /// # impl std::fmt::Display for Ply { fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result { Ok(()) } }
@@ -67,7 +66,7 @@ pub struct PvSearchAnalysis<S, E> where
 /// # impl zero_sum::Resolution for Resolution { fn get_winner(&self) -> Option<u8> { None } fn is_draw(&self) -> bool { false } }
 /// # #[derive(Clone, Eq, Hash, PartialEq)] struct State(i8);
 /// # impl State { fn new() -> State { State(0) } }
-/// # impl zero_sum::State for State { type Ply = Ply; type Resolution = Resolution; fn execute_ply_preallocated(&self, _: &Ply, _: &mut State) -> Result<(), String> { Ok(()) } fn check_resolution(&self) -> Option<Resolution> { None } }
+/// # impl zero_sum::State for State { type Ply = Ply; type Resolution = Resolution; fn get_ply_count(&self) -> usize { 0 } fn execute_ply(&mut self, _: Option<&Ply>) -> Result<(), String> { Ok(()) } fn revert_ply(&mut self, _: Option<&Ply>) -> Result<(), String> { Ok(()) } fn check_resolution(&self) -> Option<Resolution> { None } }
 /// # struct Evaluator;
 /// # impl zero_sum::analysis::Evaluator for Evaluator { type State = State; type Evaluation = Eval; fn evaluate(&self, _: &State) -> Eval { Eval(0) } }
 /// # impl zero_sum::analysis::Extrapolatable<Ply> for State { fn extrapolate(&self) -> Vec<Ply> { Vec::new() } }

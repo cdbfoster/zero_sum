@@ -45,7 +45,7 @@ use state::State;
 ///
 /// impl Evaluation for Eval {
 ///     fn null() -> Eval { Eval(0) }
-///     fn epsilon() -> Eval { Eval(1) }
+///     fn shift(self, steps: i32) -> Eval { Eval(self.0 + steps) }
 ///     fn win() -> Eval { Eval(100000) }
 ///     fn max() -> Eval { Eval(i32::MAX) }
 ///     fn is_win(&self) -> bool { self.0 > 99000 }
@@ -132,7 +132,7 @@ pub trait Evaluator {
 ///
 /// impl Evaluation for Eval {
 ///     fn null() -> Eval { Eval(0) }
-///     fn epsilon() -> Eval { Eval(1) }
+///     fn shift(self, steps: i32) -> Eval { Eval(self.0 + steps) }
 ///     fn win() -> Eval { Eval(100000) }
 ///     fn max() -> Eval { Eval(i32::MAX) }
 ///     fn is_win(&self) -> bool { self.0.abs() > 99000 }

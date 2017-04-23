@@ -25,7 +25,7 @@ use std::sync::{Arc, mpsc, Mutex};
 use std::thread;
 
 use analysis::{self, Evaluation as EvaluationTrait};
-use analysis::search::{PvSearch, Search};
+use analysis::search::{PvSearch, PvSearchAnalysis, Search};
 use impls::tak::{Color, Resolution, State};
 use impls::tak::state::ann::*;
 use state::State as StateTrait;
@@ -71,12 +71,20 @@ fn unscale_evaluation(evaluation: f32) -> Evaluation {
     Evaluation(evaluation * USABLE_RANGE)
 }
 
+/// Uses an artificial neural network to evaluate the tak state.  The network has three hidden layers
+/// using ReLU activation, and uses TanH activation on the output.  It uses ADADELTA to perform gradient
+/// descent.
+///
+/// This is largely an experimental evaluator.  While it has demonstrated its potential as a stronger
+/// evaluator of tak positions than the `StaticEvaluator`, it is an order of magnitude slower, making
+/// it unfit for use in a real-time game.
 #[derive(Clone)]
 pub struct AnnEvaluator {
     ann: Ann<ReLuActivationFunction, TanHActivationFunction, AdadeltaGradientDescent>,
 }
 
 impl AnnEvaluator {
+    /// Creates a new evaluator, randomly initializing the network.
     pub fn new() -> AnnEvaluator {
         let input_count = 339;
         let hidden_layers = [150, 64, 32];
@@ -121,6 +129,7 @@ impl AnnEvaluator {
         }
     }
 
+    /// Loads in a network state previously serialized with the `to_file` method.
     pub fn from_file(filename: &str) -> Result<AnnEvaluator, String> {
         let mut evaluator = AnnEvaluator::new();
 
@@ -135,6 +144,7 @@ impl AnnEvaluator {
         }
     }
 
+    /// Writes the current network state to a file.
     pub fn to_file(&self, filename: &str) {
         if let Ok(mut file) = OpenOptions::new().write(true).truncate(true).create(true).open(filename) {
             write_network(&mut file, &self.ann).ok();
@@ -143,6 +153,8 @@ impl AnnEvaluator {
         }
     }
 
+    /// Trains the network on `positions`, against `labels`.  Optionally will return the average amount of
+    /// error per input in `error`.
     pub fn train_batch(&mut self, positions: &[State], labels: &[Evaluation], error: Option<&mut f32>) {
         let mut inputs = MatrixRm::zeros(positions.len(), 339);
         for i in 0..positions.len() {
@@ -170,7 +182,9 @@ impl AnnEvaluator {
         self.ann.train(&inputs, &targets, 0.5);
     }
 
-    /// Use temporal difference learning to train the system through self-play.
+    /// Use temporal difference learning (TD-Leaf algorithm) to train the system through self-play.
+    /// `positions` are used as starting points for self-play.  Optionally returns the average amount of
+    /// error per input in `error`.
     pub fn train_batch_tdleaf(&mut self, positions: &[State], error: Option<&mut f32>, thread_count: usize) {
         let search_depth = 4;
 
@@ -205,7 +219,9 @@ impl AnnEvaluator {
                         *remaining
                     };
 
-                    let result = search.search(&positions[i], None);
+                    let r = search.search(&positions[i], None);
+                    let result = r.as_any().downcast_ref::<PvSearchAnalysis<State, AnnEvaluator>>().unwrap();
+
                     let leaf_score = if positions[i].ply_count % 2 == 0 {
                         1.0
                     } else {
@@ -224,7 +240,8 @@ impl AnnEvaluator {
                         let mut absolute_discount = 0.995;
 
                         for j in 0..12 {
-                            let result = search.search(&state, None);
+                            let r = search.search(&state, None);
+                            let result = r.as_any().downcast_ref::<PvSearchAnalysis<State, AnnEvaluator>>().unwrap();
 
                             if j % 2 == 1 {
                                 let next_score = if state.ply_count % 2 == 0 {

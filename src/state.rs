@@ -59,7 +59,12 @@ use resolution::Resolution;
 ///         self.1 as usize
 ///     }
 ///
-///     fn execute_ply_preallocated(&self, ply: &Move, next: &mut Board) -> Result<(), String> {
+///     fn execute_ply(&mut self, ply: Option<&Move>) -> Result<(), String> {
+///         // ...
+///         # Ok(())
+///     }
+///
+///     fn revert_ply(&mut self, ply: Option<&Move>) -> Result<(), String> {
 ///         // ...
 ///         # Ok(())
 ///     }
