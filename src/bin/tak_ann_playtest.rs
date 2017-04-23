@@ -25,8 +25,7 @@ use std::sync::{Arc, mpsc, Mutex};
 use std::thread;
 
 use zero_sum::analysis::Extrapolatable;
-use zero_sum::analysis::search::Search;
-use zero_sum::analysis::search::pvsearch::PvSearch;
+use zero_sum::analysis::search::{PvSearch, PvSearchAnalysis, Search};
 use zero_sum::impls::tak::evaluator::{AnnEvaluator, StaticEvaluator};
 use zero_sum::impls::tak::{Piece, Ply, Resolution, State};
 use zero_sum::Resolution as ResolutionTrait;
@@ -110,10 +109,12 @@ fn main() {
 
                     loop {
                         let ply = if (game + state.ply_count) % 2 == 0 {
-                            let result = ann_search.search(&state, None);
+                            let r = ann_search.search(&state, None);
+                            let result = r.as_any().downcast_ref::<PvSearchAnalysis<State, AnnEvaluator>>().unwrap();
                             result.principal_variation[0].clone()
                         } else {
-                            let result = static_search.search(&state, None);
+                            let r = static_search.search(&state, None);
+                            let result = r.as_any().downcast_ref::<PvSearchAnalysis<State, StaticEvaluator>>().unwrap();
                             result.principal_variation[0].clone()
                         };
 

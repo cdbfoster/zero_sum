@@ -106,10 +106,12 @@ fn main() {
     if label {
         println!("Labeling training positions...");
         let evaluator = StaticEvaluator;
-        let mut labels = states.iter().map(|s| evaluator.evaluate(s)).collect::<Vec<_>>();
+        let mut labels = states.iter().map(|s| <AnnEvaluator as Evaluator>::Evaluation::new(
+            evaluator.evaluate(s).0 as f32 / <StaticEvaluator as Evaluator>::Evaluation::win().0 as f32
+        )).collect::<Vec<_>>();
 
         if normalize_range {
-            let extent = labels.iter().map(|evaluation| evaluation.0.abs()).max().unwrap() as f32;
+            let extent = labels.iter().map(|evaluation| evaluation.0.abs()).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap() as f32;
             println!("  Normalizing to {}.", extent);
 
             for label in &mut labels {

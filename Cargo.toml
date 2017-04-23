@@ -21,3 +21,23 @@ fnv = "1.0"
 lazy_static = { version = "0.2", optional = true }
 rand = { version = "0.3", optional = true }
 rusqlite = { version = "0.10", optional = true }
+
+[[bin]]
+name = "tak_ann_bootstrap_evaluator"
+required-features = ["with_tak_ann"]
+
+[[bin]]
+name = "tak_ann_compare_evaluations"
+required-features = ["with_tak_ann"]
+
+[[bin]]
+name = "tak_ann_playtest"
+required-features = ["with_tak_ann"]
+
+[[bin]]
+name = "tak_ann_train_evaluator"
+required-features = ["with_tak_ann"]
+
+[[bin]]
+name = "tak_ann_training_positions"
+required-features = ["with_tak_ann"]
