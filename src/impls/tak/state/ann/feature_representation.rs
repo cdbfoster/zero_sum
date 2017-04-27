@@ -17,11 +17,13 @@
 // Copyright 2016-2017 Chris Foster
 //
 
+use std::cmp;
+
 use impls::tak::{Color, Direction, Piece, State};
 use impls::tak::state::metadata::{Bitmap, BitmapInterface, EDGE};
 
 pub fn gather_features(state: &State) -> Vec<f32> {
-    let mut features = Vec::with_capacity(339);
+    let mut features = Vec::with_capacity(264);
 
     // 1 - Side to move
     features.push((state.ply_count % 2) as f32);
@@ -66,26 +68,25 @@ pub fn gather_features(state: &State) -> Vec<f32> {
     let p2_road_group_sizes = state.metadata.p2_road_groups.iter().map(|group| group.get_population()).collect::<Vec<_>>();
     features.push(8.0f32.min(*p2_road_group_sizes.iter().max().unwrap_or(&0) as f32) / 8.0);
 
-    // 275 - Stack positions and configurations, ordered tallest to shortest
+    // 200 - Stack positions and configurations, ordered tallest to shortest
     stacks.sort_by(|a, b| {
         b.0.len().cmp(&a.0.len())
     });
     for &(stack, x, y) in &stacks {
         features.push(x);
         features.push(y);
-        for i in 0..9 {
-            if i < stack.len() {
-                features.push(match stack[i] {
-                    Piece::Flatstone(Color::White) => 1.0,
-                    Piece::Flatstone(Color::Black) => 0.0,
-                    Piece::StandingStone(Color::White) => 0.75,
-                    Piece::StandingStone(Color::Black) => 0.25,
-                    Piece::Capstone(Color::White) => 0.875,
-                    Piece::Capstone(Color::Black) => 0.125,
-                });
-            } else {
-                features.push(0.5);
-            }
+        for i in (cmp::max(stack.len() as i32 - 6, 0) as usize..stack.len()).rev() {
+            features.push(match stack[i] {
+                Piece::Flatstone(Color::White) => 1.0,
+                Piece::Flatstone(Color::Black) => 0.0,
+                Piece::StandingStone(Color::White) => 0.8,
+                Piece::StandingStone(Color::Black) => 0.2,
+                Piece::Capstone(Color::White) => 0.9,
+                Piece::Capstone(Color::Black) => 0.1,
+            });
+        }
+        for _ in 0..(6 - stack.len() as i32) {
+            features.push(0.5);
         }
     }
 

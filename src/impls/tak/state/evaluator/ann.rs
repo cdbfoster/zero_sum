@@ -86,8 +86,8 @@ pub struct AnnEvaluator {
 impl AnnEvaluator {
     /// Creates a new evaluator, randomly initializing the network.
     pub fn new() -> AnnEvaluator {
-        let input_count = 339;
-        let hidden_layers = [150, 64, 32];
+        let input_count = 264;
+        let hidden_layers = [100, 64, 48];
         let output_count = 1;
 
         let mut weight_mask = MatrixCm::zeros(input_count, hidden_layers[0]);
@@ -100,15 +100,15 @@ impl AnnEvaluator {
         }
 
         // Stack positions and configuration
-        for column in 10..125 {
-            for row in 14..289 {
+        for column in 10..75 {
+            for row in 14..214 {
                 weight_mask[column][row] = 1.0;
             }
         }
 
         // Influence
-        for column in 125..150 {
-            for row in 289..339 {
+        for column in 75..100 {
+            for row in 214..264 {
                 weight_mask[column][row] = 1.0;
             }
         }
@@ -156,7 +156,7 @@ impl AnnEvaluator {
     /// Trains the network on `positions`, against `labels`.  Optionally will return the average amount of
     /// error per input in `error`.
     pub fn train_batch(&mut self, positions: &[State], labels: &[Evaluation], error: Option<&mut f32>) {
-        let mut inputs = MatrixRm::zeros(positions.len(), 339);
+        let mut inputs = MatrixRm::zeros(positions.len(), 264);
         for i in 0..positions.len() {
             inputs[i].clone_from_slice(&gather_features(&positions[i]));
         }
@@ -190,7 +190,7 @@ impl AnnEvaluator {
 
         let total_error = Arc::new(Mutex::new(0.0));
 
-        let mut inputs = MatrixRm::zeros(positions.len(), 339);
+        let mut inputs = MatrixRm::zeros(positions.len(), 264);
         for i in 0..positions.len() {
             inputs[i].clone_from_slice(&gather_features(&positions[i]));
         }
