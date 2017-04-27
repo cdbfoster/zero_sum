@@ -31,7 +31,7 @@ fn main() {
     let network_prefix = String::from("evaluator");
     let positions_file = String::from("training_positions");
     let progress_file = String::from("progress");
-    let batch_size = 30;
+    let batch_size = 100;
     let serialize_interval = 10;
     let progress_interval = 1;
     let resume_iteration = None;

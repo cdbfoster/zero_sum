@@ -51,9 +51,10 @@ fn main() {
         "UnSweet",
         "Tayacan",
     ];
-    let sample_spacing = 2;
-    let samples_per_base = 10;
-    let label = true;
+    let sample_spacing = 4;
+    let samples_per_base = 3;
+    let maximum_positions = 500000;
+    let label = false;
     let normalize_range = true;
     let file_prefix = String::from("training");
 
@@ -79,16 +80,32 @@ fn main() {
             let mut next_plies = base.extrapolate();
             thread_rng().shuffle(&mut next_plies);
 
-            for _ in 0..samples_per_base {
-                let mut next = base.clone();
-                if next.execute_ply(next_plies.pop().as_ref()).is_ok() && next.check_resolution().is_none() {
-                    states.insert(next);
+            if samples_per_base > 0 {
+                for _ in 0..samples_per_base {
+                    let mut next = base.clone();
+                    if next.execute_ply(next_plies.pop().as_ref()).is_ok() && next.check_resolution().is_none() {
+                        states.insert(next);
+                    }
+
+                    if states.len() == maximum_positions {
+                        break;
+                    }
                 }
+            } else {
+                states.insert(base);
+            }
+
+            if states.len() == maximum_positions {
+                break;
             }
         }
 
         if number % (games.len() / 10) == 0 {
             println!("  {}%", 10 * number / (games.len() / 10));
+        }
+
+        if states.len() == maximum_positions {
+            break;
         }
     }
     println!("  Done. Generated {} training positions.", states.len());

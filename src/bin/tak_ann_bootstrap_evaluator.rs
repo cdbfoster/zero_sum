@@ -30,10 +30,10 @@ use zero_sum::impls::tak::State;
 
 fn main() {
     let network_file = String::from("evaluator_bootstrap");
-    let positions_file = String::from("training_positions");
-    let labels_file = String::from("training_labels");
+    let positions_file = String::from("bootstrap_positions");
+    let labels_file = String::from("bootstrap_labels");
     let progress_file = String::from("progress_bootstrap");
-    let batch_size = 30;
+    let batch_size = 100;
     let serialize_interval = 1000;
     let progress_interval = 1000;
 
