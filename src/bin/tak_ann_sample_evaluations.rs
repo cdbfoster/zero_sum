@@ -19,6 +19,7 @@
 
 extern crate zero_sum;
 
+use std::env;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
 
@@ -27,9 +28,21 @@ use zero_sum::impls::tak::evaluator::{AnnEvaluator, StaticEvaluator};
 use zero_sum::impls::tak::State;
 
 fn main() {
-    let network_file = String::from("evaluator");
-    let positions_file = String::from("comparison_positions");
-    let output_file = String::from("comparison");
+    let args: Vec<String> = env::args().collect();
+
+    let positions_file = if args.len() < 2 {
+        String::from("sample_positions")
+    } else {
+        args[1].clone()
+    };
+
+    let network_file = if args.len() < 3 {
+        None
+    } else {
+        Some(args[2].clone())
+    };
+
+    let output_file = String::from("sample");
 
     println!("Reading positions...");
     let positions = if let Ok(file) = OpenOptions::new().read(true).open(&positions_file) {
@@ -40,21 +53,32 @@ fn main() {
     };
     println!("  Done. Read {} positions.", positions.len());
 
-    let static_evaluator = StaticEvaluator;
+    if let Some(network_file) = network_file {
+        let evaluator = if let Ok(evaluator) = AnnEvaluator::from_file(&format!("{}", &network_file)) {
+            evaluator
+        } else {
+            panic!("Cannot read file: {}", network_file);
+        };
 
-    let ann_evaluator = if let Ok(evaluator) = AnnEvaluator::from_file(&format!("{}", &network_file)) {
-        evaluator
-    } else {
-        panic!("Cannot read file: {}", network_file);
-    };
-
-    println!("Writing evaluations...");
-    if let Ok(mut file) = OpenOptions::new().write(true).truncate(true).create(true).open(&output_file) {
-        for position in &positions {
-            write!(&mut file, "{} {}\n", static_evaluator.evaluate(position), ann_evaluator.evaluate(position)).ok();
+        println!("Writing evaluations...");
+        if let Ok(mut file) = OpenOptions::new().write(true).truncate(true).create(true).open(&output_file) {
+            for position in &positions {
+                write!(&mut file, "{}\n", evaluator.evaluate(position)).ok();
+            }
+        } else {
+            println!("Cannot write file: {}", output_file);
         }
     } else {
-        println!("Cannot write file: {}", output_file);
+        let evaluator = StaticEvaluator;
+
+        println!("Writing evaluations...");
+        if let Ok(mut file) = OpenOptions::new().write(true).truncate(true).create(true).open(&output_file) {
+            for position in &positions {
+                write!(&mut file, "{}\n", evaluator.evaluate(position)).ok();
+            }
+        } else {
+            println!("Cannot write file: {}", output_file);
+        }
     }
     println!("  Done.");
 }

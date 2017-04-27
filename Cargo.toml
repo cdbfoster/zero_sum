@@ -27,11 +27,11 @@ name = "tak_ann_bootstrap_evaluator"
 required-features = ["with_tak_ann"]
 
 [[bin]]
-name = "tak_ann_compare_evaluations"
+name = "tak_ann_playtest"
 required-features = ["with_tak_ann"]
 
 [[bin]]
-name = "tak_ann_playtest"
+name = "tak_ann_sample_evaluations"
 required-features = ["with_tak_ann"]
 
 [[bin]]
