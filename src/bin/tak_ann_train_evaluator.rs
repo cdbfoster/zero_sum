@@ -47,7 +47,7 @@ fn main() {
 
     println!("Searching for resume network file...");
     let (start_iteration, mut evaluator) = {
-        let mut resume = 0;
+        let mut resume = 1;
         let mut evaluator = None;
 
         if let Some(resume_iteration) = resume_iteration {
@@ -56,7 +56,7 @@ fn main() {
                 evaluator = Some(read);
             }
         } else {
-            for iteration in (0..).map(|i| i * serialize_interval) {
+            for iteration in (1..).map(|i| i * serialize_interval) {
                 if Path::new(&format!("{}_{:06}", &network_prefix, iteration)).exists() {
                     resume = iteration;
                 } else {
@@ -71,12 +71,12 @@ fn main() {
         if let Some(evaluator) = evaluator {
             (resume + 1, evaluator)
         } else {
-            (0, AnnEvaluator::new())
+            (1, AnnEvaluator::new())
         }
     };
 
     // If we're starting at the beginning, look for a bootstrapped network file
-    if start_iteration == 0 {
+    if start_iteration == 1 {
         if let Ok(read) = AnnEvaluator::from_file(&format!("{}_bootstrap", &network_prefix)) {
             println!("  Done. No resume network file found. Found bootstrap network file.");
             evaluator = read;
@@ -88,7 +88,7 @@ fn main() {
     }
 
     // Skip previous positions
-    for _ in 0..start_iteration * batch_size {
+    for _ in 0..(start_iteration - 1) * batch_size {
         let mut line = String::new();
         if positions.read_line(&mut line).unwrap() == 0 {
             panic!("Too few positions in {} to continue training!", &positions_file);
