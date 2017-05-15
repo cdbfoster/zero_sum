@@ -416,8 +416,9 @@ mod test {
 
     #[bench]
     fn bench_evaluate(b: &mut Bencher) {
+        let evaluator = evaluator::StaticEvaluator;
+
         b.iter(|| {
-            let evaluator = evaluator::StaticEvaluator;
             evaluator.evaluate(test::black_box(&STATE))
         });
     }

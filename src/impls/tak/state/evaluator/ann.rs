@@ -410,3 +410,24 @@ fn next_f32(x: f32) -> f32 {
 
     compose_f32(sign, exponent, mantissa)
 }
+
+#[cfg(test)]
+mod test {
+    use test::{self, Bencher};
+
+    use analysis::Evaluator;
+    use impls::tak::*;
+
+    lazy_static! {
+        static ref STATE: State = State::from_tps("[TPS \"21,22221C,1,12212S,x/2121,2S,2,1S,2/x2,2,2,x/1,2111112C,2,x,21/x,1,21,x2 1 32\"]").unwrap();
+    }
+
+    #[bench]
+    fn bench_evaluate(b: &mut Bencher) {
+        let evaluator = evaluator::AnnEvaluator::from_file("evaluator_bootstrap").unwrap();
+
+        b.iter(|| {
+            evaluator.evaluate(test::black_box(&STATE))
+        });
+    }
+}
