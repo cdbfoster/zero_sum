@@ -32,14 +32,14 @@ use zero_sum::Resolution as ResolutionTrait;
 use zero_sum::State as StateTrait;
 
 fn main() {
-    let start_iteration = 0;
-    let interval = 100;
+    let start_iteration = 10;
+    let interval = 50;
 
     for iteration in (0..).map(|x| start_iteration + x * interval) {
         let network_file = format!("evaluator_{:06}", iteration);
-        let games = 64;
+        let games = 200;
         let threads = 4;
-        let search_depth = 5;
+        let search_depth = 3;
 
         let ann_evaluator = if let Ok(evaluator) = AnnEvaluator::from_file(&network_file) {
             evaluator
@@ -124,7 +124,7 @@ fn main() {
 
                         if let Some(resolution) = state.check_resolution() {
                             if let Some(winner) = resolution.get_winner() {
-                                println!("Thread {}: Game {}: {} wins. {:?}", thread, game,
+                                println!("Thread {}: Game {}: {} wins. {:?} {} - {}", thread, game,
                                     if (game + winner as u16) % 2 == 0 {
                                         *ann_wins.lock().unwrap() += 1;
                                         "ANN"
@@ -133,6 +133,8 @@ fn main() {
                                         "Static"
                                     },
                                     resolution,
+                                    *ann_wins.lock().unwrap(),
+                                    *static_wins.lock().unwrap(),
                                 );
 
                                 if winner == 0 {
@@ -190,7 +192,7 @@ fn main() {
         println!("Loops:       {:3} / {:3} {:6.2}%", loops, games, loops as f32 / games as f32 * 100.0);
 
         if let Ok(mut file) = OpenOptions::new().append(true).create(true).open("playtests") {
-            write!(&mut file, "{:>6} {:>2} {:>2} {:>2} {:>2} {:>2} {:>2} {:>2} {:>2}\n",
+            write!(&mut file, "{:<6} {:>3} {:>3} {:>3} {:>3} {:>3} {:>3} {:>2} {:>2}\n",
                 iteration,
                 ann_wins,
                 static_wins,
