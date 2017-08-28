@@ -29,7 +29,7 @@ pub enum Mark {
 }
 
 /// The placement of a mark in an empty space.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ply {
     pub mark: Mark,
     pub coordinates: (usize, usize),

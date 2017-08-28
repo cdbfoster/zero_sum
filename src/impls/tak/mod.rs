@@ -20,7 +20,7 @@
 //! The game of [tak](http://cheapass.com/tak/).
 
 /// The colors of the players.
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Color {
     White,
     Black,
@@ -54,7 +54,7 @@ impl Piece {
 }
 
 /// The slidable directions.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Direction {
     North,
     East,

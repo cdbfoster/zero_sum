@@ -78,6 +78,8 @@ pub trait Search<S> where
     fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Box<Analysis>;
 }
 
+pub use self::mctsearch::{MctSearch, MctSearchAnalysis};
 pub use self::pvsearch::{PvSearch, PvSearchAnalysis};
 
+mod mctsearch;
 mod pvsearch;
