@@ -74,6 +74,8 @@
 #![feature(test)]
 
 extern crate fnv;
+
+#[cfg(test)]
 extern crate test;
 
 #[cfg(feature = "with_tak")]
