@@ -1,0 +1,12 @@
+[package]
+name = "smallmath"
+version = "0.1.0"
+authors = ["Chris Foster <cdbfoster@gmail.com>"]
+
+[features]
+with_blas = ["blas"]
+with_simd = ["simd"]
+
+[dependencies]
+blas = { version = "0.18", optional = true }
+simd = { version = "0.2", optional = true }

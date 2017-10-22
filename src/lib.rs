@@ -87,6 +87,8 @@ extern crate rand;
 
 #[cfg(feature = "with_tak_ann")]
 extern crate blas;
+#[cfg(feature = "with_tak_ann")]
+extern crate smallann;
 
 #[macro_use]
 pub mod analysis;

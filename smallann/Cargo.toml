@@ -1,0 +1,13 @@
+[package]
+name = "smallann"
+version = "0.1.0"
+authors = ["Chris Foster <cdbfoster@gmail.com>"]
+
+[features]
+with_blas = ["smallmath/with_blas"]
+with_simd = ["simd", "smallmath/with_simd"]
+
+[dependencies]
+rand = "*"
+simd = { version = "0.2", optional = true }
+smallmath = { path = "smallmath", version = "0.1.0" }
