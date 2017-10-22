@@ -29,9 +29,7 @@ lazy_static! {
 }
 
 impl analysis::Extrapolatable<Ply> for State {
-    fn extrapolate(&self) -> Vec<Ply> {
-        let mut plies = Vec::new();
-
+    fn extrapolate_into(&self, plies: &mut Vec<Ply>) {
         let next_color = if self.ply_count % 2 == 0 {
             Color::White
         } else {
@@ -110,10 +108,6 @@ impl analysis::Extrapolatable<Ply> for State {
                 }
             }
         }
-
-        thread_rng().shuffle(&mut plies);
-
-        plies
     }
 }
 

@@ -127,16 +127,18 @@ impl state::State for Board {
 }
 
 impl analysis::Extrapolatable<Ply> for Board {
-    fn extrapolate(&self) -> Vec<Ply> {
+    fn extrapolate_into(&self, plies: &mut Vec<Ply>) {
         let next_mark = self.next_mark();
-        self.0.iter().enumerate().filter_map(|(index, space)| if space.is_none() {
+        for ply in self.0.iter().enumerate().filter_map(|(index, space)| if space.is_none() {
             Some(Ply {
                 mark: next_mark,
                 coordinates: (index % 3, index / 3),
             })
         } else {
             None
-        }).collect::<Vec<Ply>>()
+        }) {
+            plies.push(ply)
+        }
     }
 }
 

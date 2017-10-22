@@ -17,6 +17,8 @@
 // Copyright 2016-2017 Chris Foster
 //
 
+use std::fmt::Debug;
+
 /// A game's resolution.
 ///
 /// This is often an `enum` that represents each ending a game can have.
@@ -49,7 +51,7 @@
 /// }
 /// # fn main() { }
 /// ```
-pub trait Resolution {
+pub trait Resolution: Debug {
     /// Returns the index of the winning player if this `Resolution` represents a win.
     fn get_winner(&self) -> Option<u8>;
     fn is_draw(&self) -> bool;

@@ -17,18 +17,22 @@
 // Copyright 2016-2017 Chris Foster
 //
 
-use ply::Ply;
+use analysis::Extrapolatable;
+use analysis::search::mctsearch::TreeNode;
+use state::State;
 
-/// Provides the possible plies from a given state.
-pub trait Extrapolatable<P> where
-    P: Ply {
-    /// Returns a list of plies that should be considered from the current state.  The search
-    /// system does not assume that all plies returned are correct.
-    fn extrapolate(&self) -> Vec<P> {
-        let mut plies = Vec::new();
-        self.extrapolate_into(&mut plies);
-        plies
-    }
+pub trait Selector<S>: Clone + Send where
+    S: State + Extrapolatable<<S as State>::Ply> {
+    type Data: Clone + Default;
 
-    fn extrapolate_into(&self, plies: &mut Vec<P>);
+    fn initialize_policy_data(&self) -> Self::Data;
+
+    fn select_descendant_index(&mut self, tree_node: &TreeNode<S, Self>) -> Option<usize> where Self: Sized;
+    fn get_current_pv(&mut self, tree_node: &TreeNode<S, Self>) -> Vec<(<S as State>::Ply, TreeNode<S, Self>)> where Self: Sized;
+
+    fn split(&self) -> Self;
 }
+
+pub use self::puct::PuctSelector;
+
+mod puct;

@@ -10,7 +10,8 @@ documentation = "https://cdbfoster.github.io/doc/zero_sum"
 keywords = ["zero-sum", "game", "chess", "tak", "tic-tac-toe"]
 
 [features]
-with_all = ["with_tak", "with_tak_ann", "with_tic_tac_toe"]
+with_all = ["with_tak", "with_mctsearch", "with_tak_ann", "with_tic_tac_toe"]
+with_mctsearch = ["rand"]
 with_tak = ["lazy_static", "rand"]
 with_tak_ann = ["with_tak", "blas", "rusqlite"]
 with_tic_tac_toe = []

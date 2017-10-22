@@ -80,7 +80,7 @@ extern crate test;
 #[macro_use]
 extern crate lazy_static;
 
-#[cfg(feature = "with_tak")]
+#[cfg(any(feature = "with_mctsearch", feature = "with_tak"))]
 extern crate rand;
 
 #[cfg(feature = "with_tak_ann")]

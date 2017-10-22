@@ -17,18 +17,27 @@
 // Copyright 2016-2017 Chris Foster
 //
 
-use ply::Ply;
+use std::ptr;
 
-/// Provides the possible plies from a given state.
-pub trait Extrapolatable<P> where
-    P: Ply {
-    /// Returns a list of plies that should be considered from the current state.  The search
-    /// system does not assume that all plies returned are correct.
-    fn extrapolate(&self) -> Vec<P> {
-        let mut plies = Vec::new();
-        self.extrapolate_into(&mut plies);
-        plies
+#[derive(Clone)]
+pub struct Volatile<T: Copy>(T);
+
+impl<T: Copy> Volatile<T> {
+    pub fn new(value: T) -> Volatile<T> {
+        Volatile(value)
     }
 
-    fn extrapolate_into(&self, plies: &mut Vec<P>);
+    pub fn read(&self) -> T {
+        unsafe { ptr::read_volatile(&self.0) }
+    }
+
+    pub fn write(&mut self, value: T) {
+        unsafe { ptr::write_volatile(&mut self.0, value); }
+    }
+
+    pub fn update<F>(&mut self, f: F) where F: FnOnce(&mut T) {
+        let mut value = self.read();
+        f(&mut value);
+        self.write(value);
+    }
 }
