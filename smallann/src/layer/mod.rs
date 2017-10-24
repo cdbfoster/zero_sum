@@ -31,6 +31,13 @@ pub trait Layer: Serializable {
     fn outputs(&self) -> usize;
     fn feed_forward(&self, inputs: &Matrix, outputs: &mut Matrix);
     fn propagate_backward(&mut self, gradients: &Matrix, previous_inputs: &Matrix, previous_gradients: &mut Matrix, rate: f32);
+    fn boxed_clone(&self) -> Box<Layer>;
+}
+
+impl Clone for Box<Layer> {
+    fn clone(&self) -> Box<Layer> {
+        self.boxed_clone()
+    }
 }
 
 mod activation;

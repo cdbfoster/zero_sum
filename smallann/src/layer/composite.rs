@@ -27,6 +27,7 @@ use smallmath::matrix::{self, Matrix};
 use layer::Layer;
 use serialization::{File, Identifiable, read_error, read_layer, read_line, Serializable};
 
+#[derive(Clone)]
 pub struct CompositeLayer {
     inputs: usize,
     outputs: usize,
@@ -156,6 +157,10 @@ impl Layer for CompositeLayer {
             input_position += self.layers[i].inputs();
             output_position += self.layers[i].outputs();
         }
+    }
+
+    fn boxed_clone(&self) -> Box<Layer> {
+        Box::new(self.clone())
     }
 }
 

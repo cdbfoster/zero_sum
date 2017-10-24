@@ -25,6 +25,7 @@ use smallmath::Matrix;
 use layer::Layer;
 use serialization::{File, Identifiable, read_error, read_line, Serializable};
 
+#[derive(Clone)]
 pub struct PassThroughLayer {
     size: usize,
 }
@@ -52,6 +53,10 @@ impl Layer for PassThroughLayer {
 
     fn propagate_backward(&mut self, gradients: &Matrix, _: &Matrix, previous_gradients: &mut Matrix, _: f32) {
         previous_gradients.clone_from(gradients);
+    }
+
+    fn boxed_clone(&self) -> Box<Layer> {
+        Box::new(self.clone())
     }
 }
 

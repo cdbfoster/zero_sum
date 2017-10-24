@@ -26,6 +26,7 @@ use smallmath::vector::{self, Vector};
 use gradient_descent::GradientDescent;
 use serialization::{File, Identifiable, read_error, read_line, Serializable};
 
+#[derive(Clone)]
 pub struct MomentumGradientDescent {
     momentum: f32,
 

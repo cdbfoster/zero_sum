@@ -27,6 +27,7 @@ use layer::Layer;
 use loss_function::LossFunction;
 use serialization::{File, Identifiable, read_error, read_layer, read_line, Serializable};
 
+#[derive(Clone)]
 pub struct Ann {
     layers: Vec<Box<Layer>>,
     layer_buffers: RefCell<Vec<Matrix>>,

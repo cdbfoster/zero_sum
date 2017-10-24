@@ -22,7 +22,7 @@ use smallmath::vector::{self, Vector};
 use activation_function::ActivationFunction;
 use serialization::Identifiable;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TanHActivationFunction;
 
 impl ActivationFunction for TanHActivationFunction {

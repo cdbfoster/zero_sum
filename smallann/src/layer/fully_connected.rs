@@ -29,6 +29,7 @@ use gradient_descent::GradientDescent;
 use layer::Layer;
 use serialization::{File, Identifiable, read_error, read_line, Serializable};
 
+#[derive(Clone)]
 pub struct FullyConnectedLayer<G> where G: GradientDescent {
     weights: Matrix,
     biases: Vector,
@@ -62,7 +63,7 @@ impl<G> FullyConnectedLayer<G> where G: GradientDescent {
     }
 }
 
-impl<G> Layer for FullyConnectedLayer<G> where G: GradientDescent + Serializable {
+impl<G> Layer for FullyConnectedLayer<G> where G: 'static + GradientDescent + Serializable {
     fn inputs(&self) -> usize {
         self.weights.rows()
     }
@@ -103,6 +104,10 @@ impl<G> Layer for FullyConnectedLayer<G> where G: GradientDescent + Serializable
             &self.weight_gradients, &self.bias_gradients,
             rate,
         );
+    }
+
+    fn boxed_clone(&self) -> Box<Layer> {
+        Box::new(self.clone())
     }
 }
 

@@ -25,7 +25,7 @@ use smallmath::Vector;
 use activation_function::ActivationFunction;
 use serialization::Identifiable;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ReLuActivationFunction;
 
 impl ActivationFunction for ReLuActivationFunction {

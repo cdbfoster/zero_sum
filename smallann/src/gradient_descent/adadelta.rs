@@ -29,6 +29,7 @@ use smallmath::vector::{self, Vector};
 use gradient_descent::GradientDescent;
 use serialization::{File, Identifiable, read_error, read_line, Serializable};
 
+#[derive(Clone)]
 pub struct AdadeltaGradientDescent {
     decay: f32,
     regularization: f32,

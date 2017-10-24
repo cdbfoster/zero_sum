@@ -27,6 +27,7 @@ use activation_function::ActivationFunction;
 use layer::Layer;
 use serialization::{File, Identifiable, read_error, read_line, Serializable};
 
+#[derive(Clone)]
 pub struct ActivationLayer<F> where F: ActivationFunction {
     size: usize,
     activation_function: PhantomData<F>,
@@ -41,7 +42,7 @@ impl<F> ActivationLayer<F> where F: ActivationFunction {
     }
 }
 
-impl<F> Layer for ActivationLayer<F> where F: ActivationFunction + Identifiable {
+impl<F> Layer for ActivationLayer<F> where F: 'static + ActivationFunction + Identifiable {
     fn inputs(&self) -> usize {
         self.size
     }
@@ -63,6 +64,10 @@ impl<F> Layer for ActivationLayer<F> where F: ActivationFunction + Identifiable 
         // previous_gradients = f'(previous_inputs) .* gradients
         <F as ActivationFunction>::f_prime_vector(previous_inputs, previous_gradients);
         *previous_gradients.as_vector_mut() *= gradients.as_vector();
+    }
+
+    fn boxed_clone(&self) -> Box<Layer> {
+        Box::new(self.clone())
     }
 }
 
