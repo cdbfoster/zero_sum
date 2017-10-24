@@ -27,6 +27,8 @@ extern crate simd;
 
 extern crate smallmath;
 
+pub use smallmath::{Matrix, matrix, Vector, vector};
+
 #[cfg(test)]
 extern crate test;
 
