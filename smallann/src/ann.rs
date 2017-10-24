@@ -76,6 +76,10 @@ impl Ann {
         self.write_to_file(&mut file)
     }
 
+    pub fn layers(&self) -> &[Box<Layer>] {
+        &self.layers
+    }
+
     pub fn classify(&self, inputs: &Matrix, outputs: &mut Matrix) {
         debug_assert!(inputs.rows() == outputs.rows(), "Input and output matrices have different numbers of rows!");
         debug_assert!(inputs.columns() == self.layers.first().unwrap().inputs(), "Input matrix has the wrong number of columns!");
