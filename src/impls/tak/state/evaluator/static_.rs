@@ -360,10 +360,10 @@ fn evaluate_influence(
 
         let mut cast_map = [pieces; 4];
         for _ in 0..cast {
-            cast_map[North as usize] <<= m.board_size;
-            cast_map[East as usize] = (cast_map[East as usize] >> 1) & !EDGE[m.board_size][West as usize];
-            cast_map[South as usize] >>= m.board_size;
-            cast_map[West as usize] = (cast_map[West as usize] << 1) & !EDGE[m.board_size][East as usize];
+            cast_map[North as usize] = (cast_map[North as usize] << m.board_size) & BOARD[m.board_size];
+            cast_map[East as usize] = (cast_map[East as usize] >> 1) & !EDGE[m.board_size][West as usize] & BOARD[m.board_size];
+            cast_map[South as usize] = (cast_map[South as usize] >> m.board_size) & BOARD[m.board_size];
+            cast_map[West as usize] = (cast_map[West as usize] << 1) & !EDGE[m.board_size][East as usize] & BOARD[m.board_size];
 
             add_bitmap(influence, cast_map[North as usize]);
             add_bitmap(influence, cast_map[East as usize]);
