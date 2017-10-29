@@ -86,6 +86,57 @@ impl State {
         }
     }
 
+    /// Creates a state from the given board and a ply count.
+    pub fn from_board(board: Vec<Vec<Vec<Piece>>>, ply_count: u16) -> State {
+        let board_size = board.len();
+
+        let (mut p1_flatstone_count, mut p1_capstone_count): (i8, i8) = match board_size {
+            3 => (10, 0),
+            4 => (15, 0),
+            5 => (21, 1),
+            6 => (30, 1),
+            7 => (40, 1),
+            8 => (50, 2),
+            s => panic!("Illegal board size: {}", s),
+        };
+        let (mut p2_flatstone_count, mut p2_capstone_count) = (p1_flatstone_count, p1_capstone_count);
+
+        for column in &board {
+            assert!(column.len() == board_size, "Column length doesn't match the size of the board!");
+            for stack in column {
+                for piece in stack {
+                    match *piece {
+                        Piece::Flatstone(Color::White) => p1_flatstone_count -= 1,
+                        Piece::Flatstone(Color::Black) => p2_flatstone_count -= 1,
+                        Piece::StandingStone(Color::White) => p1_flatstone_count -= 1,
+                        Piece::StandingStone(Color::Black) => p2_flatstone_count -= 1,
+                        Piece::Capstone(Color::White) => p1_capstone_count -= 1,
+                        Piece::Capstone(Color::Black) => p2_capstone_count -= 1,
+                    }
+
+                    assert!(
+                        p1_flatstone_count >= 0 && p1_capstone_count >= 0 &&
+                        p2_flatstone_count >= 0 && p2_capstone_count >= 0,
+                        "Too many pieces on the board!"
+                    );
+                }
+            }
+        }
+
+        let mut state = State {
+            p1_flatstones: p1_flatstone_count as u8,
+            p1_capstones: p1_capstone_count as u8,
+            p2_flatstones: p2_flatstone_count as u8,
+            p2_capstones: p2_capstone_count as u8,
+            board: board,
+            ply_count: ply_count,
+            ply_crushes: Vec::new(),
+            metadata: Metadata::new(board_size),
+        };
+        state.metadata = Metadata::from_state(&state);
+        state
+    }
+
     /// Creates a state from a string in TPS format, i.e. `"[TPS \"x5/x5/x5/x5/x5 1 1\"]"`.
     ///
     /// Returns `None` if the provided string has an error.
