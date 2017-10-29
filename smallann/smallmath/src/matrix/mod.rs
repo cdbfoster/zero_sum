@@ -283,4 +283,6 @@ impl<'a> Mul<&'a Matrix> for &'a Vector {
     }
 }
 
+unsafe impl Send for Matrix { }
+
 pub mod ops;

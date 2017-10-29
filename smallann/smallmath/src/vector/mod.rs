@@ -365,6 +365,8 @@ impl<'a> MulAssign<&'a [f32]> for Vector {
     }
 }
 
+unsafe impl Send for Vector { }
+
 impl<'a> Sub<f32> for &'a Vector {
     type Output = Vector;
 

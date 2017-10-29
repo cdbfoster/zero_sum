@@ -732,7 +732,7 @@ mod tests {
 
     #[bench]
     fn bench_multiply(bencher: &mut Bencher) {
-        let (m, k, n) = (100, 264, 100);
+        let (m, k, n) = (1, 264, 100);
 
         let mut a = Matrix::zeros(m, k);
         for (i, x) in a.iter_mut().enumerate() {
