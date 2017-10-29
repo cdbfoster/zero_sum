@@ -41,3 +41,11 @@ required-features = ["with_tak_ann"]
 [[bin]]
 name = "tak_ann_training_positions"
 required-features = ["with_tak_ann"]
+
+[[example]]
+name = "tak_opening"
+required-features = ["with_tak"]
+
+[[example]]
+name = "tic_tac_toe"
+required-features = ["with_tic_tac_toe"]
