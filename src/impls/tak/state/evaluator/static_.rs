@@ -414,6 +414,81 @@ mod test {
         static ref STATE: State = State::from_tps("[TPS \"21,22221C,1,12212S,x/2121,2S,2,1S,2/x2,2,2,x/1,2111112C,2,x,21/x,1,21,x2 1 32\"]").unwrap();
     }
 
+    #[test]
+    fn test_transformations() {
+        fn rotate(state: &State) -> State {
+            let board_size = state.board.len();
+            let mut board = vec![vec![Vec::with_capacity(0); board_size]; board_size];
+
+            for x in 0..board_size {
+                for y in 0..board_size {
+                    let rx = y;
+                    let ry = board_size - x - 1;
+
+                    board[rx][ry] = state.board[x][y].clone();
+                }
+            }
+
+            State::from_board(board, state.ply_count)
+        }
+
+        fn flip(state: &State) -> State {
+            let board_size = state.board.len();
+            let mut board = vec![vec![Vec::with_capacity(0); board_size]; board_size];
+
+            for x in 0..board_size {
+                for y in 0..board_size {
+                    let rx = x;
+                    let ry = board_size - y - 1;
+
+                    board[rx][ry] = state.board[x][y].clone();
+                }
+            }
+
+            State::from_board(board, state.ply_count)
+        }
+
+        let evaluator = evaluator::StaticEvaluator;
+        let original = STATE.clone();
+        let original_evaluation = evaluator.evaluate(&original);
+        println!("{}\n{}", original_evaluation, original);
+
+        let transformed = rotate(&original);
+        let transformed_evaluation = evaluator.evaluate(&transformed);
+        println!("{}\n{}", transformed_evaluation, transformed);
+        assert!(transformed_evaluation == original_evaluation);
+
+        let transformed = rotate(&transformed);
+        let transformed_evaluation = evaluator.evaluate(&transformed);
+        println!("{}\n{}", transformed_evaluation, transformed);
+        assert!(transformed_evaluation == original_evaluation);
+
+        let transformed = rotate(&transformed);
+        let transformed_evaluation = evaluator.evaluate(&transformed);
+        println!("{}\n{}", transformed_evaluation, transformed);
+        assert!(transformed_evaluation == original_evaluation);
+
+        let transformed = flip(&transformed);
+        let transformed_evaluation = evaluator.evaluate(&transformed);
+        println!("{}\n{}", transformed_evaluation, transformed);
+        assert!(transformed_evaluation == original_evaluation);
+
+        let transformed = rotate(&transformed);
+        let transformed_evaluation = evaluator.evaluate(&transformed);
+        println!("{}\n{}", transformed_evaluation, transformed);
+        assert!(transformed_evaluation == original_evaluation);
+
+        let transformed = rotate(&transformed);
+        let transformed_evaluation = evaluator.evaluate(&transformed);
+        println!("{}\n{}", transformed_evaluation, transformed);
+        assert!(transformed_evaluation == original_evaluation);
+
+        let transformed = rotate(&transformed);
+        let transformed_evaluation = evaluator.evaluate(&transformed);
+        println!("{}\n{}", transformed_evaluation, transformed);
+        assert!(transformed_evaluation == original_evaluation);
+    }
+
     #[bench]
     fn bench_evaluate(b: &mut Bencher) {
         let evaluator = evaluator::StaticEvaluator;
