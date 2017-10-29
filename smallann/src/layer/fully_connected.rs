@@ -57,10 +57,6 @@ impl<G> FullyConnectedLayer<G> where G: GradientDescent {
             transpose_buffer: Matrix::zeros(outputs, inputs),
         }
     }
-
-    pub fn do_thing() {
-        println!("{}", stringify!(G));
-    }
 }
 
 impl<G> Layer for FullyConnectedLayer<G> where G: 'static + GradientDescent + Serializable {
