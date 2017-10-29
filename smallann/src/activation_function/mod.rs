@@ -24,7 +24,7 @@ pub use self::relu::ReLuActivationFunction;
 //pub use self::softmax::SoftmaxActivationFunction;
 pub use self::tanh::TanHActivationFunction;
 
-pub trait ActivationFunction: Clone {
+pub trait ActivationFunction: Clone + Send {
     fn f(x: f32) -> f32;
     fn f_prime(x: f32) -> f32;
 

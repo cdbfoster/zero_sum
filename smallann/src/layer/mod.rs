@@ -26,7 +26,7 @@ pub use self::composite::CompositeLayer;
 pub use self::fully_connected::FullyConnectedLayer;
 pub use self::pass_through::PassThroughLayer;
 
-pub trait Layer: Serializable {
+pub trait Layer: Send + Serializable {
     fn inputs(&self) -> usize;
     fn outputs(&self) -> usize;
     fn feed_forward(&self, inputs: &Matrix, outputs: &mut Matrix);

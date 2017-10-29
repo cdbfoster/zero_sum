@@ -22,7 +22,7 @@ pub use self::adadelta::AdadeltaGradientDescent;
 pub use self::momentum::MomentumGradientDescent;
 pub use self::simple::SimpleGradientDescent;
 
-pub trait GradientDescent: Clone {
+pub trait GradientDescent: Clone + Send {
     fn descend(
         &mut self,
         weights: &mut Matrix,
