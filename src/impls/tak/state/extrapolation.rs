@@ -17,6 +17,8 @@
 // Copyright 2016-2017 Chris Foster
 //
 
+use std::cmp;
+
 use rand::{Rng, thread_rng};
 
 use analysis;
@@ -71,27 +73,74 @@ impl analysis::Extrapolatable<Ply> for State {
                         }
                     } else if stack.last().unwrap().get_color() == next_color {
                         let board_size = self.board.len();
-                        for &(direction, distance) in &[
-                            (Direction::North, board_size - 1 - y),
-                            (Direction::East,  board_size - 1 - x),
-                            (Direction::South, y),
-                            (Direction::West,  x),
+
+                        let capstone_top = if let Some(&Piece::Capstone(_)) = stack.last() {
+                            true
+                        } else {
+                            false
+                        };
+
+                        for &direction in &[
+                            Direction::North,
+                            Direction::East,
+                            Direction::South,
+                            Direction::West,
                         ] {
-                            let max_grab = if stack.len() <= board_size {
-                                stack.len()
-                            } else {
-                                board_size
+                            let (distance, standing_stone_target) = {
+                                let (dx, dy) = direction.to_offset();
+                                let (mut tx, mut ty) = (x as i8, y as i8);
+                                let mut distance = 0;
+                                let mut standing_stone_target = false;
+                                loop {
+                                    tx += dx;
+                                    ty += dy;
+
+                                    if tx >= 0 && tx < board_size as i8 && ty >= 0 && ty < board_size as i8 {
+                                        match self.board[tx as usize][ty as usize].last() {
+                                            Some(&Piece::StandingStone(_)) => { standing_stone_target = true; break; },
+                                            Some(&Piece::Capstone(_)) => break,
+                                            _ => distance += 1,
+                                        }
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                (distance, standing_stone_target)
                             };
 
-                            for drops in &SLIDE_TABLE[max_grab] {
-                                if drops.len() <= distance {
-                                    plies.push(Ply::Slide {
-                                        x: x,
-                                        y: y,
-                                        direction: direction,
-                                        drops: drops.clone(),
-                                    });
+                            let max_grab = cmp::min(stack.len(), board_size);
+
+                            if distance > 0 {
+                                for drops in &SLIDE_TABLE[max_grab] {
+                                    if drops.len() <= distance {
+                                        plies.push(Ply::Slide {
+                                            x: x,
+                                            y: y,
+                                            direction: direction,
+                                            drops: drops.clone(),
+                                        });
+
+                                        if capstone_top && standing_stone_target && drops.len() == distance && *drops.last().unwrap() > 1 {
+                                            let mut drops = drops.clone();
+                                            *drops.last_mut().unwrap() -= 1;
+                                            drops.push(1);
+
+                                            plies.push(Ply::Slide {
+                                                x: x,
+                                                y: y,
+                                                direction: direction,
+                                                drops: drops,
+                                            });
+                                        }
+                                    }
                                 }
+                            } else if capstone_top && standing_stone_target {
+                                plies.push(Ply::Slide {
+                                    x: x,
+                                    y: y,
+                                    direction: direction,
+                                    drops: vec![1],
+                                });
                             }
                         }
                     }
