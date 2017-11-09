@@ -20,9 +20,16 @@
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 
+use rand::Rng;
+
 use analysis::Extrapolatable;
+use analysis::search::pvsearch::history::History;
 use ply::Ply;
-use super::history::History;
+use util::JKiss32Rng;
+
+lazy_static! {
+    pub static ref RNG: Mutex<JKiss32Rng> = Mutex::new(JKiss32Rng::new());
+}
 
 pub struct PlyGenerator<X, P> where
     X: Extrapolatable<P>,
@@ -38,10 +45,13 @@ impl<X, P> PlyGenerator<X, P> where
     X: Extrapolatable<P>,
     P: Ply {
     pub fn new(state: &X, principal_ply: Option<P>, history: Arc<Mutex<History>>) -> PlyGenerator<X, P> {
+        let mut plies = state.extrapolate();
+        RNG.lock().unwrap().shuffle(&mut plies);
+
         PlyGenerator {
             principal_ply: principal_ply,
             history: history,
-            plies: state.extrapolate(),
+            plies: plies,
             operation: 0,
             phantom: PhantomData,
         }

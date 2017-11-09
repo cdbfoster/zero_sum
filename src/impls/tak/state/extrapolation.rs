@@ -19,8 +19,6 @@
 
 use std::cmp;
 
-use rand::{Rng, thread_rng};
-
 use analysis;
 use impls::tak::{Color, Direction, Piece};
 use impls::tak::ply::Ply;
@@ -159,8 +157,6 @@ impl analysis::Extrapolatable<Ply> for State {
                 }
             }
         }
-
-        thread_rng().shuffle(&mut plies);
 
         plies
     }
