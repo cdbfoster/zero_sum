@@ -23,7 +23,6 @@ use simd;
 use smallmath::Vector;
 
 use activation_function::ActivationFunction;
-use serialization::Identifiable;
 
 #[derive(Clone, Debug)]
 pub struct ReLuActivationFunction;
@@ -43,16 +42,6 @@ impl ActivationFunction for ReLuActivationFunction {
 
     fn f_prime_vector(inputs: &Vector, outputs: &mut Vector) {
         relu_prime(inputs, outputs);
-    }
-}
-
-impl Identifiable for ReLuActivationFunction {
-    fn identifier() -> String {
-        String::from("ReLuActivationFunction")
-    }
-
-    fn get_identifier(&self) -> String {
-        Self::identifier()
     }
 }
 

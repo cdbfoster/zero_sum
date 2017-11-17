@@ -30,7 +30,7 @@ use layer::Layer;
 use serialization::{File, Identifiable, read_error, read_line, Serializable};
 
 #[derive(Clone)]
-pub struct FullyConnectedLayer<G> where G: GradientDescent {
+pub struct FullyConnectedLayer<G> {
     weights: Matrix,
     biases: Vector,
 
@@ -42,18 +42,16 @@ pub struct FullyConnectedLayer<G> where G: GradientDescent {
 }
 
 impl<G> FullyConnectedLayer<G> where G: GradientDescent {
-    pub fn new<R>(inputs: usize, outputs: usize, gradient_descent: G, rng: &mut R) -> FullyConnectedLayer<G> where R: Rng{
+    pub fn new<R>(inputs: usize, outputs: usize, gradient_descent: G, rng: &mut R) -> FullyConnectedLayer<G> where R: Rng {
         FullyConnectedLayer {
             weights: Matrix::from_vec(inputs, outputs, {
                 let mut distribution = Normal::new(0.0, (2.0 / outputs as f64).sqrt());
                 (0..inputs * outputs).map(|_| distribution.sample(rng) as f32).collect::<Vec<_>>()
             }),
             biases: Vector::zeros(outputs),
-
             gradient_descent: gradient_descent,
             weight_gradients: Matrix::zeros(inputs, outputs),
             bias_gradients: Vector::zeros(outputs),
-
             transpose_buffer: Matrix::zeros(outputs, inputs),
         }
     }
@@ -107,7 +105,7 @@ impl<G> Layer for FullyConnectedLayer<G> where G: 'static + GradientDescent + Se
     }
 }
 
-impl<G> Identifiable for FullyConnectedLayer<G> where G: GradientDescent + Serializable {
+impl<G> Identifiable for FullyConnectedLayer<G> where G: Identifiable {
     fn identifier() -> String {
         format!("FullyConnectedLayer<{}>", G::identifier())
     }
@@ -117,7 +115,7 @@ impl<G> Identifiable for FullyConnectedLayer<G> where G: GradientDescent + Seria
     }
 }
 
-impl<G> Serializable for FullyConnectedLayer<G> where G: GradientDescent + Serializable {
+impl<G> Serializable for FullyConnectedLayer<G> where G: Serializable {
     fn read_from_file(file: &mut BufReader<File>) -> Result<FullyConnectedLayer<G>> {
         let strings = read_line(file)?;
 
@@ -152,11 +150,9 @@ impl<G> Serializable for FullyConnectedLayer<G> where G: GradientDescent + Seria
         Ok(FullyConnectedLayer {
             weights: weights,
             biases: biases,
-
             gradient_descent: gradient_descent,
             weight_gradients: Matrix::zeros(inputs, outputs),
             bias_gradients: Vector::zeros(outputs),
-
             transpose_buffer: Matrix::zeros(outputs, inputs),
         })
     }

@@ -22,7 +22,9 @@ use smallmath::Matrix;
 use serialization::Serializable;
 
 pub use self::activation::ActivationLayer;
+//pub use self::block::BlockLayer;
 pub use self::composite::CompositeLayer;
+pub use self::convolutional::ConvolutionalLayer;
 pub use self::fully_connected::FullyConnectedLayer;
 pub use self::pass_through::PassThroughLayer;
 
@@ -41,6 +43,8 @@ impl Clone for Box<Layer> {
 }
 
 mod activation;
+//mod block;
 mod composite;
+mod convolutional;
 mod fully_connected;
 mod pass_through;

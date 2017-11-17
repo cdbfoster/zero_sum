@@ -20,7 +20,6 @@
 use smallmath::vector::{self, Vector};
 
 use activation_function::ActivationFunction;
-use serialization::Identifiable;
 
 #[derive(Clone, Debug)]
 pub struct TanHActivationFunction;
@@ -69,16 +68,6 @@ impl ActivationFunction for TanHActivationFunction {
         vector::ops::square_assign(outputs);
         vector::ops::scale_assign(outputs, -1.0);
         vector::ops::offset_assign(outputs, 1.0);
-    }
-}
-
-impl Identifiable for TanHActivationFunction {
-    fn identifier() -> String {
-        String::from("TanHActivationFunction")
-    }
-
-    fn get_identifier(&self) -> String {
-        Self::identifier()
     }
 }
 

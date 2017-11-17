@@ -27,71 +27,18 @@ use activation_function::*;
 use gradient_descent::*;
 use layer::*;
 
-pub struct File {
-    handle: StdFile,
-    line: usize,
-    indentation: usize,
-}
+pub use self::identifiable::Identifiable;
+pub use self::serializable::Serializable;
 
-impl File {
-    pub fn new(handle: StdFile, indentation: usize) -> File {
-        File {
-            handle: handle,
-            line: 0,
-            indentation: indentation,
-        }
-    }
+#[macro_use]
+mod identifiable;
+#[macro_use]
+mod serializable;
 
-    pub fn open(filename: &str) -> Result<File> {
-        OpenOptions::new().read(true).open(filename).map(|f| File { handle: f, line: 0, indentation: 0 })
-    }
-
-    pub fn create(filename: &str) -> Result<File> {
-        OpenOptions::new().write(true).truncate(true).create(true).open(filename).map(|f| File { handle: f, line: 0, indentation: 0 })
-    }
-
-    pub fn append(filename: &str, indentation: usize) -> Result<File> {
-        OpenOptions::new().append(true).open(filename).map(|f| File { handle: f, line: 0, indentation: indentation })
-    }
-
-    pub fn indent(&mut self) {
-        self.indentation += 4;
-    }
-
-    pub fn unindent(&mut self) {
-        self.indentation -= 4;
-    }
-
-    pub fn indentation(&mut self) -> String {
-        (0..self.indentation).map(|_| " ").collect::<String>()
-    }
-}
-
-impl Read for File {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        self.handle.read(buf)
-    }
-}
-
-impl Write for File {
-    fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        self.handle.write(buf)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.handle.flush()
-    }
-}
-
-pub trait Identifiable {
-    fn identifier() -> String where Self: Sized;
-    fn get_identifier(&self) -> String;
-}
-
-pub trait Serializable: Identifiable {
-    fn read_from_file(file: &mut BufReader<File>) -> Result<Self> where Self: Sized;
-    fn write_to_file(&self, file: &mut File) -> Result<()>;
-}
+identifiable!(
+    ReLuActivationFunction,
+    TanHActivationFunction,
+);
 
 pub fn read_error<T>(file: &BufReader<File>, message: &str) -> Result<T> {
     Err(Error::new(ErrorKind::Other, format!("Line {}: {}", file.get_ref().line, message)))
@@ -252,6 +199,9 @@ pub fn read_layer(file: &mut BufReader<File>) -> Result<Box<Layer>> {
         "ActivationLayer<ReLuActivationFunction>" => ActivationLayer::<ReLuActivationFunction>::read_from_file(file).map(|l| Box::new(l) as Box<Layer>),
         "ActivationLayer<TanHActivationFunction>" => ActivationLayer::<TanHActivationFunction>::read_from_file(file).map(|l| Box::new(l) as Box<Layer>),
         "CompositeLayer" => CompositeLayer::read_from_file(file).map(|l| Box::new(l) as Box<Layer>),
+        "ConvolutionalLayer<AdadeltaGradientDescent>" => ConvolutionalLayer::<AdadeltaGradientDescent>::read_from_file(file).map(|l| Box::new(l) as Box<Layer>),
+        "ConvolutionalLayer<MomentumGradientDescent>" => ConvolutionalLayer::<MomentumGradientDescent>::read_from_file(file).map(|l| Box::new(l) as Box<Layer>),
+        "ConvolutionalLayer<SimpleGradientDescent>" => ConvolutionalLayer::<SimpleGradientDescent>::read_from_file(file).map(|l| Box::new(l) as Box<Layer>),
         "FullyConnectedLayer<AdadeltaGradientDescent>" => FullyConnectedLayer::<AdadeltaGradientDescent>::read_from_file(file).map(|l| Box::new(l) as Box<Layer>),
         "FullyConnectedLayer<MomentumGradientDescent>" => FullyConnectedLayer::<MomentumGradientDescent>::read_from_file(file).map(|l| Box::new(l) as Box<Layer>),
         "FullyConnectedLayer<SimpleGradientDescent>" => FullyConnectedLayer::<SimpleGradientDescent>::read_from_file(file).map(|l| Box::new(l) as Box<Layer>),
@@ -259,3 +209,7 @@ pub fn read_layer(file: &mut BufReader<File>) -> Result<Box<Layer>> {
         _ => read_error(file, "Unknown layer type!"),
     }
 }
+
+pub use self::file::File;
+
+mod file;
