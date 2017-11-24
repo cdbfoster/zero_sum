@@ -28,10 +28,6 @@ macro_rules! identifiable {
             identifiable_single!($type$(<$($T),*>)*);
         )*
     };
-    // Trailing comma is optional
-    ($($type:ident$(<$($T:ident),+>)*),*) => {
-        identifiable!($($type$(<$($T),+>)*,)*);
-    };
 }
 
 macro_rules! identifiable_single {

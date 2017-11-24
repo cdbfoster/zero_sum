@@ -17,8 +17,6 @@
 // Copyright 2017 Chris Foster
 //
 
-use std::io::{BufReader, Result, Write};
-
 use rand::Rng;
 use rand::distributions::{Normal, Sample};
 
@@ -27,21 +25,21 @@ use smallmath::matrix::{self, Matrix};
 
 use gradient_descent::GradientDescent;
 use layer::Layer;
-use serialization::{File, Identifiable, read_error, read_line, Serializable};
+use serialization::Serializable;
 
 #[derive(Clone)]
 pub struct FullyConnectedLayer<G> {
-    weights: Matrix,
-    biases: Vector,
+    pub(crate) weights: Matrix,
+    pub(crate) biases: Vector,
 
-    gradient_descent: G,
+    pub(crate) gradient_descent: G,
     weight_gradients: Matrix,
     bias_gradients: Vector,
 
     transpose_buffer: Matrix,
 }
 
-impl<G> FullyConnectedLayer<G> where G: GradientDescent {
+impl<G> FullyConnectedLayer<G> {
     pub fn new<R>(inputs: usize, outputs: usize, gradient_descent: G, rng: &mut R) -> FullyConnectedLayer<G> where R: Rng {
         FullyConnectedLayer {
             weights: Matrix::from_vec(inputs, outputs, {
@@ -49,6 +47,23 @@ impl<G> FullyConnectedLayer<G> where G: GradientDescent {
                 (0..inputs * outputs).map(|_| distribution.sample(rng) as f32).collect::<Vec<_>>()
             }),
             biases: Vector::zeros(outputs),
+            gradient_descent: gradient_descent,
+            weight_gradients: Matrix::zeros(inputs, outputs),
+            bias_gradients: Vector::zeros(outputs),
+            transpose_buffer: Matrix::zeros(outputs, inputs),
+        }
+    }
+
+    pub(crate) fn construct(
+        inputs: usize,
+        outputs: usize,
+        weights: Matrix,
+        biases: Vector,
+        gradient_descent: G,
+    ) -> FullyConnectedLayer<G> {
+        FullyConnectedLayer {
+            weights: weights,
+            biases: biases,
             gradient_descent: gradient_descent,
             weight_gradients: Matrix::zeros(inputs, outputs),
             bias_gradients: Vector::zeros(outputs),
@@ -102,71 +117,5 @@ impl<G> Layer for FullyConnectedLayer<G> where G: 'static + GradientDescent + Se
 
     fn boxed_clone(&self) -> Box<Layer> {
         Box::new(self.clone())
-    }
-}
-
-impl<G> Identifiable for FullyConnectedLayer<G> where G: Identifiable {
-    fn identifier() -> String {
-        format!("FullyConnectedLayer<{}>", G::identifier())
-    }
-
-    fn get_identifier(&self) -> String {
-        Self::identifier()
-    }
-}
-
-impl<G> Serializable for FullyConnectedLayer<G> where G: Serializable {
-    fn read_from_file(file: &mut BufReader<File>) -> Result<FullyConnectedLayer<G>> {
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 || strings[0] != "Weights" {
-            return read_error(file, "Cannot read layer weights!");
-        }
-
-        let weights = Matrix::read_from_file(file)?;
-        let inputs = weights.rows();
-        let outputs = weights.columns();
-
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 || strings[0] != "Biases" {
-            return read_error(file, "Cannot read layer biases!");
-        }
-
-        let biases = Vector::read_from_file(file)?;
-
-        if biases.len() != outputs {
-            return read_error(file, "Biases don't match layer outputs!");
-        }
-
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 || strings[0] != G::identifier() {
-            return read_error(file, "Cannot read layer gradient descent!");
-        }
-
-        let gradient_descent = G::read_from_file(file)?;
-
-        Ok(FullyConnectedLayer {
-            weights: weights,
-            biases: biases,
-            gradient_descent: gradient_descent,
-            weight_gradients: Matrix::zeros(inputs, outputs),
-            bias_gradients: Vector::zeros(outputs),
-            transpose_buffer: Matrix::zeros(outputs, inputs),
-        })
-    }
-
-    fn write_to_file(&self, file: &mut File) -> Result<()> {
-        let indentation = file.indentation();
-        write!(file, "{}Weights\n", indentation)?;
-        file.indent();
-        self.weights.write_to_file(file)?;
-        write!(file, "{}Biases\n", indentation)?;
-        self.biases.write_to_file(file)?;
-        write!(file, "{}{}\n", indentation, G::identifier())?;
-        self.gradient_descent.write_to_file(file)?;
-        file.unindent();
-        Ok(())
     }
 }

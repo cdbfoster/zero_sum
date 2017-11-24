@@ -17,23 +17,21 @@
 // Copyright 2017 Chris Foster
 //
 
-use std::io::{BufReader, Result, Write};
 use std::marker::PhantomData;
-use std::str::FromStr;
 
 use smallmath::Matrix;
 
 use activation_function::ActivationFunction;
 use layer::Layer;
-use serialization::{File, Identifiable, read_error, read_line, Serializable};
+use serialization::Identifiable;
 
 #[derive(Clone)]
-pub struct ActivationLayer<F> where F: ActivationFunction {
-    size: usize,
+pub struct ActivationLayer<F> {
+    pub(crate) size: usize,
     activation_function: PhantomData<F>,
 }
 
-impl<F> ActivationLayer<F> where F: ActivationFunction {
+impl<F> ActivationLayer<F> {
     pub fn new(size: usize) -> ActivationLayer<F> {
         ActivationLayer {
             size: size,
@@ -68,38 +66,5 @@ impl<F> Layer for ActivationLayer<F> where F: 'static + ActivationFunction + Ide
 
     fn boxed_clone(&self) -> Box<Layer> {
         Box::new(self.clone())
-    }
-}
-
-impl<F> Identifiable for ActivationLayer<F> where F: ActivationFunction + Identifiable {
-    fn identifier() -> String {
-        format!("ActivationLayer<{}>", F::identifier())
-    }
-
-    fn get_identifier(&self) -> String {
-        Self::identifier()
-    }
-}
-
-impl<F> Serializable for ActivationLayer<F> where F: ActivationFunction + Identifiable {
-    fn read_from_file(file: &mut BufReader<File>) -> Result<ActivationLayer<F>> {
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 {
-            return read_error(file, "Cannot read layer weights!");
-        }
-
-        let size = if let Ok(size) = usize::from_str(&strings[0]) {
-            size
-        } else {
-            return read_error(file, "Cannot parse layer size!");
-        };
-
-        Ok(ActivationLayer::<F>::new(size))
-    }
-
-    fn write_to_file(&self, file: &mut File) -> Result<()> {
-        let indentation = file.indentation();
-        write!(file, "{}{}\n", indentation, self.size)
     }
 }

@@ -18,8 +18,7 @@
 //
 
 use std::fs::{File as StdFile, OpenOptions};
-use std::io::{self, BufRead, BufReader, Error, ErrorKind, Read, Result, Write};
-use std::str::FromStr;
+use std::io::{self, Read, Result, Write};
 
 pub struct File {
     handle: StdFile,

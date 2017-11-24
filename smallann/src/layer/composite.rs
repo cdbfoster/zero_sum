@@ -18,20 +18,17 @@
 //
 
 use std::cell::RefCell;
-use std::io::{BufReader, Result, Write};
 use std::mem;
-use std::str::FromStr;
 
 use smallmath::matrix::{self, Matrix};
 
 use layer::Layer;
-use serialization::{File, Identifiable, read_error, read_layer, read_line, Serializable};
 
 #[derive(Clone)]
 pub struct CompositeLayer {
     inputs: usize,
     outputs: usize,
-    layers: Vec<Box<Layer>>,
+    pub(crate) layers: Vec<Box<Layer>>,
 
     input_buffers: RefCell<Vec<Matrix>>,
     output_buffers: RefCell<Vec<Matrix>>,
@@ -161,51 +158,5 @@ impl Layer for CompositeLayer {
 
     fn boxed_clone(&self) -> Box<Layer> {
         Box::new(self.clone())
-    }
-}
-
-impl Identifiable for CompositeLayer {
-    fn identifier() -> String {
-        String::from("CompositeLayer")
-    }
-
-    fn get_identifier(&self) -> String {
-        Self::identifier()
-    }
-}
-
-impl Serializable for CompositeLayer {
-    fn read_from_file(file: &mut BufReader<File>) -> Result<CompositeLayer> {
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 {
-            return read_error(file, "Cannot read layer count!");
-        }
-
-        let layer_count = if let Ok(layer_count) = usize::from_str(&strings[0]) {
-            layer_count
-        } else {
-            return read_error(file, "Cannot parse layer count!");
-        };
-
-        let mut layers: Vec<Box<Layer>> = Vec::new();
-        for _ in 0..layer_count {
-            let layer = read_layer(file)?;
-            layers.push(layer);
-        }
-
-        Ok(CompositeLayer::new(layers))
-    }
-
-    fn write_to_file(&self, file: &mut File) -> Result<()> {
-        let indentation = file.indentation();
-        write!(file, "{}{}\n", indentation, self.layers.len())?;
-        for layer in &self.layers {
-            write!(file, "{}{}\n", indentation, layer.get_identifier())?;
-            file.indent();
-            layer.write_to_file(file)?;
-            file.unindent();
-        }
-        Ok(())
     }
 }

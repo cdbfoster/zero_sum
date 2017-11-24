@@ -17,8 +17,6 @@
 // Copyright 2017 Chris Foster
 //
 
-use std::io::{BufReader, Result, Write};
-
 use rand::Rng;
 use rand::distributions::{Normal, Sample};
 
@@ -27,22 +25,22 @@ use smallmath::matrix::{self, Matrix};
 
 use gradient_descent::GradientDescent;
 use layer::Layer;
-use serialization::{File, Identifiable, read_error, read_line, Serializable, write_matrix};
+use serialization::Serializable;
 
 #[derive(Clone)]
-pub struct ConvolutionalLayer<G> where G: GradientDescent {
-    weights: Matrix,
-    weights_mask: Matrix,
-    biases: Vector,
+pub struct ConvolutionalLayer<G> {
+    pub(crate) weights: Matrix,
+    pub(crate) weights_mask: Matrix,
+    pub(crate) biases: Vector,
 
-    gradient_descent: G,
+    pub(crate) gradient_descent: G,
     weight_gradients: Matrix,
     bias_gradients: Vector,
 
     transpose_buffer: Matrix,
 }
 
-impl<G> ConvolutionalLayer<G> where G: GradientDescent {
+impl<G> ConvolutionalLayer<G> {
     pub fn new<R>(
         input_width: usize,
         input_height: usize,
@@ -106,6 +104,24 @@ impl<G> ConvolutionalLayer<G> where G: GradientDescent {
             transpose_buffer: Matrix::zeros(outputs, inputs),
         }
     }
+
+    pub(crate) fn construct(
+        inputs:usize, outputs: usize,
+        weights: Matrix,
+        weights_mask: Matrix,
+        biases: Vector,
+        gradient_descent: G,
+    ) -> ConvolutionalLayer<G> {
+        ConvolutionalLayer {
+            weights: weights,
+            weights_mask: weights_mask,
+            biases: biases,
+            gradient_descent: gradient_descent,
+            weight_gradients: Matrix::zeros(inputs, outputs),
+            bias_gradients: Vector::zeros(outputs),
+            transpose_buffer: Matrix::zeros(outputs, inputs),
+        }
+    }
 }
 
 impl<G> Layer for ConvolutionalLayer<G> where G: 'static + GradientDescent + Serializable {
@@ -155,86 +171,5 @@ impl<G> Layer for ConvolutionalLayer<G> where G: 'static + GradientDescent + Ser
 
     fn boxed_clone(&self) -> Box<Layer> {
         Box::new(self.clone())
-    }
-}
-
-impl<G> Identifiable for ConvolutionalLayer<G> where G: GradientDescent + Serializable {
-    fn identifier() -> String {
-        format!("ConvolutionalLayer<{}>", G::identifier())
-    }
-
-    fn get_identifier(&self) -> String {
-        Self::identifier()
-    }
-}
-
-impl<G> Serializable for ConvolutionalLayer<G> where G: GradientDescent + Serializable {
-    fn read_from_file(file: &mut BufReader<File>) -> Result<ConvolutionalLayer<G>> {
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 || strings[0] != "Weights" {
-            return read_error(file, "Cannot read layer weights!");
-        }
-
-        let weights = Matrix::read_from_file(file)?;
-        let inputs = weights.rows();
-        let outputs = weights.columns();
-
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 || strings[0] != "WeightsMask" {
-            return read_error(file, "Cannot read layer weights mask!");
-        }
-
-        let weights_mask = Matrix::read_from_file(file)?;
-
-        if weights_mask.rows() != inputs || weights_mask.columns() != outputs {
-            return read_error(file, "Weights mask doesn't match weights dimensions!");
-        }
-
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 || strings[0] != "Biases" {
-            return read_error(file, "Cannot read layer biases!");
-        }
-
-        let biases = Vector::read_from_file(file)?;
-
-        if biases.len() != outputs {
-            return read_error(file, "Biases don't match layer outputs!");
-        }
-
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 || strings[0] != G::identifier() {
-            return read_error(file, "Cannot read layer gradient descent!");
-        }
-
-        let gradient_descent = G::read_from_file(file)?;
-
-        Ok(ConvolutionalLayer {
-            weights: weights,
-            weights_mask: weights_mask,
-            biases: biases,
-            gradient_descent: gradient_descent,
-            weight_gradients: Matrix::zeros(inputs, outputs),
-            bias_gradients: Vector::zeros(outputs),
-            transpose_buffer: Matrix::zeros(outputs, inputs),
-        })
-    }
-
-    fn write_to_file(&self, file: &mut File) -> Result<()> {
-        let indentation = file.indentation();
-        write!(file, "{}Weights\n", indentation)?;
-        file.indent();
-        self.weights.write_to_file(file)?;
-        write!(file, "{}WeightsMask\n", indentation)?;
-        write_matrix(file, &self.weights_mask, 0)?;
-        write!(file, "{}Biases\n", indentation)?;
-        self.biases.write_to_file(file)?;
-        write!(file, "{}{}\n", indentation, G::identifier())?;
-        self.gradient_descent.write_to_file(file)?;
-        file.unindent();
-        Ok(())
     }
 }

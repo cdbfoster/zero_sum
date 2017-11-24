@@ -17,9 +17,7 @@
 // Copyright 2017 Chris Foster
 //
 
-use std::fs::{File as StdFile, OpenOptions};
-use std::io::{self, BufRead, BufReader, Error, ErrorKind, Read, Result, Write};
-use std::str::FromStr;
+use std::io::{BufRead, BufReader, Error, ErrorKind, Result};
 
 use serialization::{File, Identifiable};
 
@@ -28,5 +26,27 @@ pub trait Serializable: Identifiable {
     fn write_to_file(&self, file: &mut File) -> Result<()>;
 }
 
+pub fn read_error<T>(file: &BufReader<File>, message: &str) -> Result<T> {
+    Err(Error::new(ErrorKind::Other, format!("Line {}: {}", file.get_ref().line, message)))
+}
+
+pub fn read_line(file: &mut BufReader<File>) -> Result<Vec<String>> {
+    let mut line = String::new();
+    file.read_line(&mut line)?;
+    file.get_mut().line += 1;
+    Ok(
+        line.trim().split(" ").filter_map(|s| if !s.is_empty() {
+            Some(s.to_string())
+        } else {
+            None
+        }).collect::<Vec<String>>()
+    )
+}
+
+pub use self::matrix::write_matrix;
+
+mod gradient_descent;
 #[macro_use]
 mod layer;
+mod matrix;
+mod vector;

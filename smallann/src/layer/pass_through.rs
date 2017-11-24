@@ -17,17 +17,13 @@
 // Copyright 2017 Chris Foster
 //
 
-use std::io::{BufReader, Result, Write};
-use std::str::FromStr;
-
 use smallmath::Matrix;
 
 use layer::Layer;
-use serialization::{File, Identifiable, read_error, read_line, Serializable};
 
 #[derive(Clone)]
 pub struct PassThroughLayer {
-    size: usize,
+    pub(crate) size: usize,
 }
 
 impl PassThroughLayer {
@@ -57,38 +53,5 @@ impl Layer for PassThroughLayer {
 
     fn boxed_clone(&self) -> Box<Layer> {
         Box::new(self.clone())
-    }
-}
-
-impl Identifiable for PassThroughLayer {
-    fn identifier() -> String {
-        String::from("PassThroughLayer")
-    }
-
-    fn get_identifier(&self) -> String {
-        Self::identifier()
-    }
-}
-
-impl Serializable for PassThroughLayer {
-    fn read_from_file(file: &mut BufReader<File>) -> Result<PassThroughLayer> {
-        let strings = read_line(file)?;
-
-        if strings.len() < 1 {
-            return read_error(file, "Cannot read layer size!");
-        }
-
-        let size = if let Ok(size) = usize::from_str(&strings[0]) {
-            size
-        } else {
-            return read_error(file, "Cannot parse layer size!");
-        };
-
-        Ok(PassThroughLayer::new(size))
-    }
-
-    fn write_to_file(&self, file: &mut File) -> Result<()> {
-        let indentation = file.indentation();
-        write!(file, "{}{}\n", indentation, self.size)
     }
 }
