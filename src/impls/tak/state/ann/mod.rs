@@ -21,7 +21,7 @@ use std::cell::RefCell;
 use std::cmp;
 use std::marker::PhantomData;
 
-use blas::c as blas;
+use cblas as blas;
 use rand::distributions::{Normal, Sample};
 use rand::{thread_rng};
 
@@ -173,21 +173,21 @@ impl<A, F, G> Ann<A, F, G> where
                 // pre_activations = layer_inputs * weights + biases
                 let (m, n, k) = (layer_inputs.rows as i32, weights.columns as i32, layer_inputs.columns as i32);
                 if n > 1 {
-                    blas::sgemm(
+                    unsafe { blas::sgemm(
                         blas::Layout::RowMajor, blas::Transpose::None, blas::Transpose::Ordinary,
                         m, n, k,
                         1.0, layer_inputs.values.as_slice(), k,
                         weights.values.as_slice(), weights.rows as i32,
                         1.0, pre_activations.values.as_mut_slice(), n,
-                    );
+                    ); }
                 } else {
-                    blas::sgemv(
+                    unsafe { blas::sgemv(
                         blas::Layout::RowMajor, blas::Transpose::None,
                         m, k,
                         1.0, layer_inputs.values.as_slice(), k,
                         weights.values.as_slice(), 1,
                         1.0, pre_activations.values.as_mut_slice(), 1,
-                    );
+                    ); }
                 }
             }
 
@@ -228,21 +228,21 @@ impl<A, F, G> Ann<A, F, G> where
                 // pre_activations = layer_inputs * weights + biases
                 let (m, n, k) = (layer_inputs.rows as i32, weights.columns as i32, layer_inputs.columns as i32);
                 if n == 1 {
-                    blas::sgemv(
+                    unsafe { blas::sgemv(
                         blas::Layout::RowMajor, blas::Transpose::None,
                         m, k,
                         1.0, layer_inputs.values.as_slice(), k,
                         weights.values.as_slice(), 1,
                         1.0, pre_activations.values.as_mut_slice(), 1,
-                    );
+                    ); }
                 } else {
-                    blas::sgemm(
+                    unsafe { blas::sgemm(
                         blas::Layout::RowMajor, blas::Transpose::None, blas::Transpose::Ordinary,
                         m, n, k,
                         1.0, layer_inputs.values.as_slice(), k,
                         weights.values.as_slice(), weights.rows as i32,
                         1.0, pre_activations.values.as_mut_slice(), n,
-                    );
+                    ); }
                 }
             }
 
@@ -317,12 +317,12 @@ impl<A, F, G> Ann<A, F, G> where
             // bias_gradients[layer] = delta, all inputs summed
             bias_gradients[layer].values.clone_from_slice(&delta[0]);
             for i in 1..delta.rows {
-                blas::saxpy(
+                unsafe { blas::saxpy(
                     delta.columns as i32,
                     1.0,
                     &delta[i], 1,
                     bias_gradients[layer].values.as_mut_slice(), 1,
-                );
+                ); }
             }
 
             // weight_gradients[layer] = previous_activations.transpose() * delta
@@ -331,26 +331,26 @@ impl<A, F, G> Ann<A, F, G> where
             } else {
                 &activations[layer - 1]
             };
-            blas::sgemm(
+            unsafe { blas::sgemm(
                 blas::Layout::ColumnMajor, blas::Transpose::None, blas::Transpose::Ordinary,
                 previous_activations.columns as i32, delta.columns as i32, previous_activations.rows as i32,
                 1.0, previous_activations.values.as_slice(), previous_activations.columns as i32,
                 delta.values.as_slice(), delta.columns as i32,
                 0.0, weight_gradients[layer].values.as_mut_slice(), weight_gradients[layer].rows as i32,
-            );
+            ); }
 
             if layer > 0 {
                 // delta = delta * self.weights[layer].transpose() .* f_prime(pre_activations[layer - 1])
                 let (m, n, k) = (delta.rows as i32, self.weights[layer].rows as i32, delta.columns as i32);
                 delta_tmp.resize(m as usize, n as usize);
 
-                blas::sgemm(
+                unsafe { blas::sgemm(
                     blas::Layout::RowMajor, blas::Transpose::None, blas::Transpose::None,
                     m, n, k,
                     1.0, delta.values.as_slice(), k,
                     self.weights[layer].values.as_slice(), n,
                     0.0, delta_tmp.values.as_mut_slice(), n,
-                );
+                ); }
 
                 delta.resize(delta_tmp.rows, delta_tmp.columns);
 
@@ -403,7 +403,7 @@ pub fn calculate_error<F>(outputs: &MatrixRm, targets: &MatrixRm, error: &mut Ma
     if F::new().as_any().is::<TanHActivationFunction>() {
         // error = (outputs - targets) * (outputs - targets)
         error.values.clone_from(&outputs.values);
-        blas::saxpy((error.rows * error.columns) as i32, -1.0, &targets.values, 1, &mut error.values, 1);
+        unsafe { blas::saxpy((error.rows * error.columns) as i32, -1.0, &targets.values, 1, &mut error.values, 1); }
 
         for value in &mut error.values {
             *value *= *value;
@@ -411,7 +411,7 @@ pub fn calculate_error<F>(outputs: &MatrixRm, targets: &MatrixRm, error: &mut Ma
     } else { // Linear
         // error = outputs - targets
         error.values.clone_from(&outputs.values);
-        blas::saxpy((error.rows * error.columns) as i32, -1.0, &targets.values, 1, &mut error.values, 1);
+        unsafe { blas::saxpy((error.rows * error.columns) as i32, -1.0, &targets.values, 1, &mut error.values, 1); }
     }
 
     error.values.iter().sum()
@@ -424,12 +424,12 @@ pub fn calculate_error_derivatives<F>(outputs: &MatrixRm, targets: &MatrixRm, er
     if F::new().as_any().is::<TanHActivationFunction>() {
         // error_derivatives = (outputs - targets) .* (1.0 - (tanh(outputs) ^ 2))
         error_derivatives.values.clone_from(&outputs.values);
-        blas::saxpy(
+        unsafe { blas::saxpy(
             (error_derivatives.rows * error_derivatives.columns) as i32,
             -1.0,
             &targets.values, 1,
             &mut error_derivatives.values, 1,
-        );
+        ); }
 
         for i in 0..error_derivatives.values.len() {
             let tanh_x = outputs.values[i].tanh();
@@ -438,12 +438,12 @@ pub fn calculate_error_derivatives<F>(outputs: &MatrixRm, targets: &MatrixRm, er
     } else { // Linear
         // error_derivatives = (outputs - targets) > 0.0 ? 1.0 : -1.0
         error_derivatives.values.clone_from(&outputs.values);
-        blas::saxpy(
+        unsafe { blas::saxpy(
             (error_derivatives.rows * error_derivatives.columns) as i32,
             -1.0,
             &targets.values, 1,
             &mut error_derivatives.values, 1,
-        );
+        ); }
 
         for value in &mut error_derivatives.values {
             *value = if *value > 0.0 {

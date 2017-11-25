@@ -17,7 +17,7 @@
 // Copyright 2016-2017 Chris Foster
 //
 
-use blas::c as blas;
+use cblas as blas;
 
 use impls::tak::state::ann::{MatrixCm, MatrixRm};
 
@@ -82,12 +82,12 @@ impl GradientDescent for SimpleGradientDescent {
             let biases = &mut biases[layer];
 
             // weights -= rate * weight_gradients
-            blas::saxpy(
+            unsafe { blas::saxpy(
                 (weights.rows * weights.columns) as i32,
                 -rate,
                 &weight_gradients[layer].values, 1,
                 &mut weights.values, 1,
-            );
+            ); }
 
             // weights .*= weight_masks
             if let Some(ref mask) = weight_masks[layer] {
@@ -97,12 +97,12 @@ impl GradientDescent for SimpleGradientDescent {
             }
 
             // biases -= rate * bias_gradients
-            blas::saxpy(
+            unsafe { blas::saxpy(
                 (biases.columns) as i32,
                 -rate,
                 &bias_gradients[layer].values, 1,
                 &mut biases.values, 1,
-            );
+            ); }
         }
     }
 }
@@ -230,27 +230,27 @@ impl GradientDescent for AdadeltaGradientDescent {
 
             let decay = 0.99;
             // weights_e = weights_e * decay + weight_gradients ^ 2 * (1.0 - decay)
-            blas::sscal((weights_e.rows * weights_e.columns) as i32, decay, &mut weights_e.values, 1);
+            unsafe { blas::sscal((weights_e.rows * weights_e.columns) as i32, decay, &mut weights_e.values, 1); }
             for i in 0..weight_gradients.values.len() {
                 weights_temp.values[i] = weight_gradients.values[i] * weight_gradients.values[i];
             }
-            blas::saxpy(
+            unsafe { blas::saxpy(
                 (weights_e.rows * weights_e.columns) as i32,
                 1.0 - decay,
                 &weights_temp.values, 1,
                 &mut weights_e.values, 1,
-            );
+            ); }
             // biases_e = biases_e * decay + bias_gradients ^ 2 * (1.0 - decay)
-            blas::sscal((biases_e.rows * biases_e.columns) as i32, decay, &mut biases_e.values, 1);
+            unsafe { blas::sscal((biases_e.rows * biases_e.columns) as i32, decay, &mut biases_e.values, 1); }
             for i in 0..bias_gradients.values.len() {
                 biases_temp.values[i] = bias_gradients.values[i] * bias_gradients.values[i];
             }
-            blas::saxpy(
+            unsafe { blas::saxpy(
                 (biases_e.rows * biases_e.columns) as i32,
                 1.0 - decay,
                 &biases_temp.values, 1,
                 &mut biases_e.values, 1,
-            );
+            ); }
 
             let epsilon = 1e-8;
             // weights_delta = weight_gradients .* (weights_rms + epsilon).sqrt() / (weights_e + epsilon).sqrt() + weight_reg
@@ -271,12 +271,12 @@ impl GradientDescent for AdadeltaGradientDescent {
             }
 
             // weights -= rate * weights_delta
-            blas::saxpy(
+            unsafe { blas::saxpy(
                 (weights.rows * weights.columns) as i32,
                 -rate,
                 &weights_temp.values, 1,
                 &mut weights.values, 1,
-            );
+            ); }
 
             // weights .*= weight_masks
             if let Some(ref mask) = weight_masks[layer] {
@@ -286,35 +286,35 @@ impl GradientDescent for AdadeltaGradientDescent {
             }
 
             // biases -= rate * biases_delta
-            blas::saxpy(
+            unsafe { blas::saxpy(
                 (biases.columns) as i32,
                 -rate,
                 &biases_temp.values, 1,
                 &mut biases.values, 1,
-            );
+            ); }
 
             // weights_rms = weights_rms * decay + weights_delta ^ 2 * (1.0 - decay)
-            blas::sscal((weights_rms.rows * weights_rms.columns) as i32, decay, &mut weights_rms.values, 1);
+            unsafe { blas::sscal((weights_rms.rows * weights_rms.columns) as i32, decay, &mut weights_rms.values, 1); }
             for i in 0..weights_temp.values.len() {
                 weights_temp.values[i] *= weights_temp.values[i];
             }
-            blas::saxpy(
+            unsafe { blas::saxpy(
                 (weights_rms.rows * weights_rms.columns) as i32,
                 1.0 - decay,
                 &weights_temp.values, 1,
                 &mut weights_rms.values, 1,
-            );
+            ); }
             // biases_rms = biases_rms * decay + biases_delta ^ 2 * (1.0 - decay)
-            blas::sscal((biases_rms.rows * biases_rms.columns) as i32, decay, &mut biases_rms.values, 1);
+            unsafe { blas::sscal((biases_rms.rows * biases_rms.columns) as i32, decay, &mut biases_rms.values, 1); }
             for i in 0..biases_temp.values.len() {
                 biases_temp.values[i] *= biases_temp.values[i];
             }
-            blas::saxpy(
+            unsafe { blas::saxpy(
                 (biases_rms.rows * biases_rms.columns) as i32,
                 1.0 - decay,
                 &biases_temp.values, 1,
                 &mut biases_rms.values, 1,
-            );
+            ); }
         }
     }
 }

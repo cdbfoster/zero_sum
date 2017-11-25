@@ -86,7 +86,9 @@ extern crate lazy_static;
 extern crate rand;
 
 #[cfg(feature = "with_tak_ann")]
-extern crate blas;
+extern crate cblas;
+#[cfg(feature = "with_tak_ann")]
+extern crate openblas_src;
 #[cfg(feature = "with_tak_ann")]
 extern crate smallann;
 
