@@ -4,9 +4,10 @@ version = "0.1.0"
 authors = ["Chris Foster <cdbfoster@gmail.com>"]
 
 [features]
-with_blas = ["blas"]
+with_blas = ["cblas", "openblas-src"]
 with_simd = ["simd"]
 
 [dependencies]
-blas = { version = "0.18", optional = true }
+cblas = { version = "0.1", optional = true }
+openblas-src = { version = "0.5", optional = true }
 simd = { version = "0.2", optional = true }

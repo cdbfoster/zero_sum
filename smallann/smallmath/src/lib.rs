@@ -21,7 +21,9 @@
 #![feature(test)]
 
 #[cfg(feature = "with_blas")]
-extern crate blas;
+extern crate cblas;
+#[cfg(feature = "with_blas")]
+extern crate openblas_src;
 
 #[cfg(feature = "with_simd")]
 extern crate simd;

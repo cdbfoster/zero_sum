@@ -18,7 +18,7 @@
 //
 
 #[cfg(feature = "with_blas")]
-use blas;
+use cblas as blas;
 
 #[cfg(all(feature = "with_simd", not(feature = "with_blas")))]
 use simd;
@@ -27,14 +27,14 @@ use vector::Vector;
 
 #[cfg(feature = "with_blas")]
 pub fn scale(a: &Vector, b: f32, c: &mut Vector) {
-    unsafe { blas::c::saxpy(
+    unsafe { blas::saxpy(
         a.len() as i32, b, a, 1, c, 1,
     ) };
 }
 
 #[cfg(feature = "with_blas")]
 pub fn scale_assign(a: &mut Vector, b: f32) {
-    unsafe { blas::c::sscal(
+    unsafe { blas::sscal(
         a.len() as i32, b, a, 1,
     ) };
 }

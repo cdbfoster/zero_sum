@@ -18,7 +18,7 @@
 //
 
 #[cfg(feature = "with_blas")]
-use blas;
+use cblas as blas;
 
 #[cfg(feature = "with_simd")]
 use simd;
@@ -29,7 +29,7 @@ use vector::Vector;
 pub fn subtract_assign(a: &mut Vector, b: &Vector) {
     debug_assert!(a.len() == b.len(), "Operand vectors are different lengths!");
 
-    unsafe { blas::c::saxpy(
+    unsafe { blas::saxpy(
         a.len() as i32, -1.0, b, 1, a, 1,
     ) };
 }

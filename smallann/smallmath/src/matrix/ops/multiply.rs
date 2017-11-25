@@ -18,7 +18,7 @@
 //
 
 #[cfg(feature = "with_blas")]
-use blas;
+use cblas as blas;
 
 #[cfg(all(feature = "with_simd", not(feature = "with_blas")))]
 use simd;
@@ -31,8 +31,8 @@ pub fn multiply(a: &Matrix, b: &Matrix, c: &mut Matrix) {
     debug_assert!(a.rows == c.rows && b.columns == c.columns, "Invalid destination matrix dimensions for multiplication!");
 
     let (m, k, n) = (a.rows as i32, b.rows as i32, b.columns as i32);
-    unsafe { blas::c::sgemm(
-        blas::c::Layout::RowMajor, blas::c::Transpose::None, blas::c::Transpose::None,
+    unsafe { blas::sgemm(
+        blas::Layout::RowMajor, blas::Transpose::None, blas::Transpose::None,
         m, n, k,
         1.0, a, k,
         b, n,
