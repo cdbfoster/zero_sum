@@ -10,4 +10,4 @@ with_simd = ["simd", "smallmath/with_simd"]
 [dependencies]
 rand = "*"
 simd = { version = "0.2", optional = true }
-smallmath = { path = "smallmath", version = "0.1.0" }
+smallmath = { path = "smallmath", version = "0.1" }
