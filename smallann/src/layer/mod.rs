@@ -27,6 +27,7 @@ pub use self::composite::CompositeLayer;
 pub use self::convolutional::ConvolutionalLayer;
 pub use self::fully_connected::FullyConnectedLayer;
 pub use self::pass_through::PassThroughLayer;
+pub use self::split::SplitLayer;
 
 pub trait Layer: Send + Serializable {
     fn inputs(&self) -> usize;
@@ -48,3 +49,4 @@ mod composite;
 mod convolutional;
 mod fully_connected;
 mod pass_through;
+mod split;

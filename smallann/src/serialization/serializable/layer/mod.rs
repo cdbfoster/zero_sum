@@ -74,3 +74,4 @@ mod composite;
 mod convolutional;
 mod fully_connected;
 mod pass_through;
+mod split;

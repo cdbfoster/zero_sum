@@ -56,6 +56,7 @@ read_layer_types! {
       //BlockLayer,
       CompositeLayer,
       PassThroughLayer,
+      SplitLayer,
     ],
 }
 
