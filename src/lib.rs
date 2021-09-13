@@ -73,14 +73,9 @@
 
 extern crate fnv;
 
-#[cfg(test)]
-extern crate test;
-
-#[cfg(feature = "with_tak")]
 #[macro_use]
 extern crate lazy_static;
 
-#[cfg(feature = "with_tak")]
 extern crate rand;
 
 #[cfg(feature = "with_tak_ann")]
