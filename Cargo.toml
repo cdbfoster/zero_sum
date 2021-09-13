@@ -19,7 +19,7 @@ with_tic_tac_toe = []
 [dependencies]
 blas = { version = "0.15.3", optional = true }
 fnv = "1.0"
-lazy_static = { version = "0.2", optional = true }
+lazy_static = { version = "1", optional = true }
 rand = { version = "0.3", optional = true }
 rusqlite = { version = "0.10", optional = true }
 
