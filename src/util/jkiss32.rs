@@ -16,7 +16,7 @@
 // Copyright 2016-2017 Chris Foster
 //
 
-use rand::{self, Rng};
+use rand::{self, Rng, RngCore};
 
 #[derive(Clone, Copy)]
 pub struct JKiss32Rng {
@@ -40,7 +40,7 @@ impl JKiss32Rng {
     }
 }
 
-impl Rng for JKiss32Rng {
+impl RngCore for JKiss32Rng {
     fn next_u32(&mut self) -> u32 {
         self.y ^= self.y << 5;
         self.y ^= self.y >> 7;
@@ -52,5 +52,16 @@ impl Rng for JKiss32Rng {
         self.x = self.x.wrapping_add(1411392427);
         self.x.wrapping_add(self.y).wrapping_add(self.w)
     }
-}
 
+    fn next_u64(&mut self) -> u64 {
+        rand_core::impls::next_u64_via_u32(self)
+    }
+
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        rand_core::impls::fill_bytes_via_next(self, dest)
+    }
+
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand::Error> {
+        Ok(rand_core::impls::fill_bytes_via_next(self, dest))
+    }
+}

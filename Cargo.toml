@@ -1,6 +1,6 @@
 [package]
 name = "zero_sum"
-version = "1.2.0"
+version = "1.3.0"
 authors = ["Chris Foster <cdbfoster@gmail.com>"]
 license = "GPL-3.0"
 description = "An analysis engine for zero-sum games with game implementations."
@@ -8,18 +8,20 @@ repository = "https://github.com/cdbfoster/zero_sum"
 readme = "README.md"
 documentation = "https://cdbfoster.github.io/doc/zero_sum"
 keywords = ["zero-sum", "game", "chess", "tak", "tic-tac-toe"]
+edition = "2015"
 
 [features]
 with_all = ["with_tak", "with_tak_ann", "with_tic_tac_toe"]
-with_tak = ["lazy_static", "rand"]
+with_tak = []
 with_tak_ann = ["with_tak", "blas", "rusqlite"]
 with_tic_tac_toe = []
 
 [dependencies]
 blas = { version = "0.15.3", optional = true }
 fnv = "1.0"
-lazy_static = { version = "0.2", optional = true }
-rand = { version = "0.3", optional = true }
+lazy_static = "1"
+rand = "0.8"
+rand_core = "0.6"
 rusqlite = { version = "0.10", optional = true }
 
 [[bin]]

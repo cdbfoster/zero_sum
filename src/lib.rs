@@ -71,18 +71,11 @@
 //! The provided tic-tac-toe implementation is very simple and a usage example can
 //! be found in [examples/tic_tac_toe.rs](https://github.com/cdbfoster/zero_sum/blob/master/examples/tic_tac_toe.rs).
 
-#![feature(test)]
-
 extern crate fnv;
 
-#[cfg(test)]
-extern crate test;
-
-#[cfg(feature = "with_tak")]
 #[macro_use]
 extern crate lazy_static;
 
-#[cfg(feature = "with_tak")]
 extern crate rand;
 
 #[cfg(feature = "with_tak_ann")]

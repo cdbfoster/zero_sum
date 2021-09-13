@@ -21,7 +21,7 @@ extern crate zero_sum;
 
 use std::io::{self, Write};
 
-use zero_sum::analysis::search::Search;
+use zero_sum::analysis::search::{Search, PvSearchAnalysis};
 use zero_sum::impls::tic_tac_toe::*;
 use zero_sum::State;
 
@@ -31,7 +31,7 @@ fn main() {
     loop {
         let mut board = Board::new();
         let evaluator = Evaluator;
-        let mut ai = zero_sum::analysis::search::pvsearch::PvSearch::new(evaluator);
+        let mut ai = zero_sum::analysis::search::PvSearch::new(evaluator);
 
         println!("--------------------");
 
@@ -84,7 +84,11 @@ fn main() {
             } else {
                 println!("Computer's turn:");
 
-                ai.search(&board, None).principal_variation[0].clone()
+                ai.search(&board, None)
+                    .as_any()
+                    .downcast_ref::<PvSearchAnalysis<Board, Evaluator>>()
+                    .unwrap()
+                    .principal_variation[0].clone()
             };
 
             if let Err(error) = board.execute_ply(Some(&ply)) {

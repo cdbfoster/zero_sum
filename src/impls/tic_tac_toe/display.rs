@@ -38,14 +38,14 @@ impl fmt::Display for Ply {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "\n   1  2  3"));
+        write!(f, "\n   1  2  3")?;
         for y in 0..3 {
-            try!(write!(f, "\n{} ", y + 1));
+            write!(f, "\n{} ", y + 1)?;
             for x in 0..3 {
-                try!(write!(f, "[{}]", match self.0[x + 3 * y] {
-                    Some(mark) => Box::new(mark) as Box<fmt::Display>,
+                write!(f, "[{}]", match self.0[x + 3 * y] {
+                    Some(mark) => Box::new(mark) as Box<dyn fmt::Display>,
                     None => Box::new(" "),
-                }));
+                })?;
             }
 
         }

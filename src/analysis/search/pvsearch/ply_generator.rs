@@ -20,7 +20,7 @@
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 
-use rand::Rng;
+use rand::seq::SliceRandom;
 
 use analysis::Extrapolatable;
 use analysis::search::pvsearch::history::History;
@@ -46,7 +46,7 @@ impl<X, P> PlyGenerator<X, P> where
     P: Ply {
     pub fn new(state: &X, principal_ply: Option<P>, history: Arc<Mutex<History>>) -> PlyGenerator<X, P> {
         let mut plies = state.extrapolate();
-        RNG.lock().unwrap().shuffle(&mut plies);
+        plies.shuffle(&mut *RNG.lock().unwrap());
 
         PlyGenerator {
             principal_ply: principal_ply,

@@ -333,7 +333,7 @@ impl<S, E> PvSearch<S, E> where
 impl<S, E> Search<S> for PvSearch<S, E> where
     S: 'static + State + Extrapolatable<<S as State>::Ply>,
     E: 'static + Evaluator<State = S> {
-    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Box<Analysis> {
+    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Box<dyn Analysis> {
         let mut state = state.clone();
         let mut eval = <E as Evaluator>::Evaluation::null();
         let mut principal_variation = Vec::new();
@@ -438,13 +438,13 @@ impl<S, E> fmt::Display for PvSearchAnalysis<S, E> where
     S: State + Extrapolatable<<S as State>::Ply>,
     E: Evaluator<State = S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "State: {}\n", self.state));
+        write!(f, "State: {}\n", self.state)?;
         let mut result = self.state.clone();
         if result.execute_plies(&self.principal_variation).is_ok() {
-            try!(write!(f, "Resultant State: {}\n", result));
+            write!(f, "Resultant State: {}\n", result)?;
             // XXX Make Resolution require Display and print the resolution if any
         }
-        try!(write!(f, "Evaluation: {}{}", self.evaluation, if self.evaluation.is_end() {
+        write!(f, "Evaluation: {}{}", self.evaluation, if self.evaluation.is_end() {
             if self.evaluation.is_win() {
                 " (Win)\n"
             } else {
@@ -452,12 +452,12 @@ impl<S, E> fmt::Display for PvSearchAnalysis<S, E> where
             }
         } else {
             "\n"
-        }));
-        try!(write!(f, "Principal Variation:"));
+        })?;
+        write!(f, "Principal Variation:")?;
         for ply in &self.principal_variation {
-            try!(write!(f, "\n  {}", ply));
+            write!(f, "\n  {}", ply)?;
         }
-        try!(write!(f, "\nStatistics:\n{}", self.statistics));
+        write!(f, "\nStatistics:\n{}", self.statistics)?;
         Ok(())
     }
 }
@@ -465,7 +465,7 @@ impl<S, E> fmt::Display for PvSearchAnalysis<S, E> where
 impl<S, E> Analysis for PvSearchAnalysis<S, E> where
     S: 'static + State + Extrapolatable<<S as State>::Ply>,
     E: 'static + Evaluator<State = S> {
-    fn as_any(&self) -> &Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 }

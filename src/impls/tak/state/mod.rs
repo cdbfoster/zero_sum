@@ -388,64 +388,64 @@ impl fmt::Display for State {
             })
         }).collect::<Vec<_>>();
 
-        try!(write!(f, "\n Player 1: {:>2} flatstone{}", self.p1_flatstones,
+        write!(f, "\n Player 1: {:>2} flatstone{}", self.p1_flatstones,
             if self.p1_flatstones != 1 { "s" } else { "" }
-        ));
+        )?;
 
         if self.p1_capstones > 0 {
-            try!(write!(f, ", {} capstone{}", self.p1_capstones,
+            write!(f, ", {} capstone{}", self.p1_capstones,
                 if self.p1_capstones != 1 { "s" } else { "" }
-            ));
+            )?;
         }
 
-        try!(write!(f, "\n Player 2: {:>2} flatstone{}", self.p2_flatstones,
+        write!(f, "\n Player 2: {:>2} flatstone{}", self.p2_flatstones,
             if self.p2_flatstones != 1 { "s" } else { "" }
-        ));
+        )?;
 
         if self.p2_capstones > 0 {
-            try!(write!(f, ", {} capstone{}\n\n", self.p2_capstones,
+            write!(f, ", {} capstone{}\n\n", self.p2_capstones,
                 if self.p2_capstones != 1 { "s" } else { "" }
-            ));
+            )?;
         } else {
-            try!(write!(f, "\n\n"));
+            write!(f, "\n\n")?;
         }
 
         for row in (0..board_size).rev() {
-            try!(write!(f, " {}   ", row + 1));
+            write!(f, " {}   ", row + 1)?;
 
             for column in 0..board_size {
                 let mut c = String::new();
-                try!(write!(c, "["));
+                write!(c, "[")?;
 
                 for (index, piece) in self.board[column][row].iter().rev().enumerate() {
                     if index > 0 {
-                        try!(write!(c, " "));
+                        write!(c, " ")?;
                     }
 
-                    try!(write!(c, "{}", match piece.get_color() {
+                    write!(c, "{}", match piece.get_color() {
                         Color::White => "W",
                         Color::Black => "B",
-                    }));
+                    })?;
 
                     match *piece {
-                        Piece::StandingStone(_) => { try!(write!(c, "S")); },
-                        Piece::Capstone(_) => { try!(write!(c, "C")); },
+                        Piece::StandingStone(_) => { write!(c, "S")?; },
+                        Piece::Capstone(_) => { write!(c, "C")?; },
                         _ => (),
                     }
                 }
 
-                try!(write!(c, "]"));
+                write!(c, "]")?;
 
-                try!(write!(f, "{:<width$}", c, width = column_widths[column]));
+                write!(f, "{:<width$}", c, width = column_widths[column])?;
             }
 
-            try!(write!(f, "\n"));
+            write!(f, "\n")?;
         }
 
-        try!(write!(f, "\n     "));
+        write!(f, "\n     ")?;
 
         for (index, column_width) in column_widths.iter().enumerate() {
-            try!(write!(f, "{:<width$}", (index as u8 + 97) as char, width = column_width));
+            write!(f, "{:<width$}", (index as u8 + 97) as char, width = column_width)?;
         }
 
         write!(f, "\n")

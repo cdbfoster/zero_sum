@@ -16,7 +16,6 @@
 //
 // Copyright 2016-2017 Chris Foster
 //
-
 pub use self::jkiss32::JKiss32Rng;
 
 mod jkiss32;
