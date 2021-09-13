@@ -8,6 +8,7 @@ repository = "https://github.com/cdbfoster/zero_sum"
 readme = "README.md"
 documentation = "https://cdbfoster.github.io/doc/zero_sum"
 keywords = ["zero-sum", "game", "chess", "tak", "tic-tac-toe"]
+edition = "2015"
 
 [features]
 with_all = ["with_tak", "with_tak_ann", "with_tic_tac_toe"]
