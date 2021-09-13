@@ -71,8 +71,6 @@
 //! The provided tic-tac-toe implementation is very simple and a usage example can
 //! be found in [examples/tic_tac_toe.rs](https://github.com/cdbfoster/zero_sum/blob/master/examples/tic_tac_toe.rs).
 
-#![feature(test)]
-
 extern crate fnv;
 
 #[cfg(test)]
