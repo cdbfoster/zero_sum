@@ -149,17 +149,17 @@ impl fmt::Display for Statistics {
         };
 
         for (i, max_depth) in data[..data.len() - 1].iter().enumerate() {
-            try!(write!(f, "\n  {0:1$}", format!("Max Depth {}:", i + 1), title_width + 2));
+            write!(f, "\n  {0:1$}", format!("Max Depth {}:", i + 1), title_width + 2)?;
             for j in 0..max_depth.len() {
-                try!(write!(f, "  {0:>1$}", j + 1, column_widths[j]));
+                write!(f, "  {0:>1$}", j + 1, column_widths[j])?;
             }
             for (j, title) in titles.iter().enumerate() {
-                try!(write!(f, "\n    {0:1$}", title, title_width));
+                write!(f, "\n    {0:1$}", title, title_width)?;
                 for (k, depth) in max_depth.iter().enumerate() {
-                    try!(write!(f, "  {0:>1$}", depth[j], column_widths[k]));
+                    write!(f, "  {0:>1$}", depth[j], column_widths[k])?;
                 }
             }
-            try!(write!(f, "\n"));
+            write!(f, "\n")?;
         }
 
         let final_totals = {
@@ -181,17 +181,17 @@ impl fmt::Display for Statistics {
         );
 
         let totals_strings = data.last().unwrap();
-        try!(write!(f, "\n  {0:1$}", "Totals:", title_width + 2));
+        write!(f, "\n  {0:1$}", "Totals:", title_width + 2)?;
         for j in 0..totals_strings.len() {
-            try!(write!(f, "  {0:>1$}", j + 1, column_widths[j]));
+            write!(f, "  {0:>1$}", j + 1, column_widths[j])?;
         }
-        try!(write!(f, "  {0:>1$}", "Total", final_totals_width));
+        write!(f, "  {0:>1$}", "Total", final_totals_width)?;
         for (j, title) in titles.iter().enumerate() {
-            try!(write!(f, "\n    {0:1$}", title, title_width));
+            write!(f, "\n    {0:1$}", title, title_width)?;
             for (k, depth) in totals_strings.iter().enumerate() {
-                try!(write!(f, "  {0:>1$}", depth[j], column_widths[k]));
+                write!(f, "  {0:>1$}", depth[j], column_widths[k])?;
             }
-            try!(write!(f, "  {0:>1$}", final_totals[j], final_totals_width));
+            write!(f, "  {0:>1$}", final_totals[j], final_totals_width)?;
         }
 
         Ok(())
