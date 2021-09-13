@@ -43,7 +43,7 @@ impl fmt::Display for Board {
             write!(f, "\n{} ", y + 1)?;
             for x in 0..3 {
                 write!(f, "[{}]", match self.0[x + 3 * y] {
-                    Some(mark) => Box::new(mark) as Box<fmt::Display>,
+                    Some(mark) => Box::new(mark) as Box<dyn fmt::Display>,
                     None => Box::new(" "),
                 })?;
             }

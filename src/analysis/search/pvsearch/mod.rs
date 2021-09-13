@@ -333,7 +333,7 @@ impl<S, E> PvSearch<S, E> where
 impl<S, E> Search<S> for PvSearch<S, E> where
     S: 'static + State + Extrapolatable<<S as State>::Ply>,
     E: 'static + Evaluator<State = S> {
-    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Box<Analysis> {
+    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Box<dyn Analysis> {
         let mut state = state.clone();
         let mut eval = <E as Evaluator>::Evaluation::null();
         let mut principal_variation = Vec::new();
@@ -465,7 +465,7 @@ impl<S, E> fmt::Display for PvSearchAnalysis<S, E> where
 impl<S, E> Analysis for PvSearchAnalysis<S, E> where
     S: 'static + State + Extrapolatable<<S as State>::Ply>,
     E: 'static + Evaluator<State = S> {
-    fn as_any(&self) -> &Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 }

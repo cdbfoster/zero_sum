@@ -68,14 +68,14 @@ use state::State;
 /// # }
 /// ```
 pub trait Analysis: Display {
-    fn as_any(&self) -> &Any;
+    fn as_any(&self) -> &dyn Any;
 }
 
 /// Provides search capabilities.
 pub trait Search<S> where
     S: State + Extrapolatable<<S as State>::Ply> {
     /// Generates an analysis of `state`.  `interrupt` is optionally provided to interrupt long searches.
-    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Box<Analysis>;
+    fn search(&mut self, state: &S, interrupt: Option<Receiver<()>>) -> Box<dyn Analysis>;
 }
 
 pub use self::pvsearch::{PvSearch, PvSearchAnalysis};
